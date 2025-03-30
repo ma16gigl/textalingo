@@ -3,7 +3,7 @@ const supabase = window.supabase.createClient(
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4dmdxb3Nramppd3d2YnBpY3JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0Mzk5OTMsImV4cCI6MjA1ODAxNTk5M30.cLhkued4GU774EhTotpFLAfGIH_iPDhVZp2CqRJxUq8'
 );
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+// const OPENAI_API_KEY = ''; // Temporarily removed - to be set via environment variables in a server context
 
 let currentLanguage = null;
 let currentStory = [];
