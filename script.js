@@ -1242,8 +1242,15 @@ function loadFavoriteWords() {
 }
 
 async function handlePaymentSuccess(sessionId) {
-    await updateUserSubscription(sessionId);
-    window.location.href = "/"; // Redirect to home after success
+    console.log("Handling payment success for session:", sessionId);
+    try {
+        await updateUserSubscription(sessionId);
+        console.log("Subscription updated, redirecting to home");
+        window.location.href = "/";
+    } catch (error) {
+        console.error("Error in handlePaymentSuccess:", error);
+        window.location.href = "/"; // Redirect anyway as fallback
+    }
 }
 
 (async function checkUserOnLoad() {
