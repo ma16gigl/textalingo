@@ -7,9 +7,9 @@ exports.handler = async (event) => {
     console.log(`Creating checkout session for plan: ${plan}`);
 
     const priceIds = {
-      monthly: 'prod_S2VAKjG4yejvwH', // Replace with your actual Monthly Price ID
-      annual: 'prod_S2VA1M8U5wjaSL',  // Replace with your actual Annual Price ID
-      lifetime: 'prod_S2VAWdHOEuj83s' // Replace with your actual Lifetime Price ID
+      monthly: 'price_1R8Q9yPaz9K9KC7G5aRRvQXy', // Replace with your actual Monthly Price ID
+      annual: 'price_1R8QALPaz9K9KC7G7u49Dnzk',  // Replace with your actual Annual Price ID
+      lifetime: 'price_1R8QAaPaz9K9KC7G628hwX33' // Replace with your actual Lifetime Price ID
     };
 
     if (!priceIds[plan]) {
