@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TextaLingo Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form, .section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007aff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        .message-box {
+            margin: 10px 0;
+        }
+        .story-list, .translation-list {
+            list-style: none;
+            padding: 0;
+        }
+        .story-list li, .translation-list li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+        }
+        .edit-btn {
+            background-color: #28a745;
+        }
+        .edit-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>TextaLingo Admin</h1>
+
+    <!-- Add a New Story -->
+    <div class="section">
+        <h2>Add a New Story</h2>
+        <form action="/admin/add-story" method="POST">
+            <label for="language">Language:</label>
+            <select id="language" name="language">
+                <option value="italian">Italian</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+            </select>
+
+            <label for="title">Story Title:</label>
+            <input type="text" id="title" name="title" required>
+
+            <label for="is_new">Is it new?</label>
+            <select id="is_new" name="is_new">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+
+            <h3>Messages</h3>
+            <div id="messages">
+                <div class="message-box">
+                    <label>Message 1 Text:</label>
+                    <textarea name="messages[0][text]" required></textarea>
+                    <label>Sender:</label>
+                    <select name="messages[0][sender]">
+                        <option value="received">Received</option>
+                        <option value="sent">Sent</option>
+                    </select>
+                    <label>Delay (ms):</label>
+                    <input type="number" name="messages[0][delay]" value="2000">
+                </div>
+            </div>
+            <button type="button" onclick="addMessage()">Add Another Message</button>
+            <br><br>
+            <button type="submit">Save Story</button>
+        </form>
+    </div>
+
+    <!-- Add a New Translation -->
+    <div class="section">
+        <h2>Add a New Translation</h2>
+        <form action="/admin/add-translation" method="POST">
+            <label for="language">Language:</label>
+            <select id="language" name="language">
+                <option value="italian">Italian</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+            </select>
+
+            <label for="word">Word:</label>
+            <input type="text" id="word" name="word" required>
+
+            <label for="translation">Translation:</label>
+            <input type="text" id="translation" name="translation" required>
+
+            <button type="submit">Save Translation</button>
+        </form>
+    </div>
+
+    <!-- List of Stories -->
+    <div class="section">
+        <h2>All Stories</h2>
+        <% ['italian', 'spanish', 'french', 'german'].forEach(lang => { %>
+            <h3><%= lang.charAt(0).toUpperCase() + lang.slice(1) %> Stories</h3>
+            <ul class="story-list">
+                <% stories.filter(story => story.language === lang).forEach(story => { %>
+                    <li>
+                        <%= story.title %> (ID: <%= story.id %>) - <%= story.is_new ? 'New' : 'Not New' %>
+                        <a href="/admin/edit-story/<%= story.id %>"><button class="edit-btn">Edit</button></a>
+                    </li>
+                <% }) %>
+            </ul>
+        <% }) %>
+    </div>
+
+    <!-- List of Translations -->
+    <div class="section">
+        <h2>All Translations</h2>
+        <% ['italian', 'spanish', 'french', 'german'].forEach(lang => { %>
+            <h3><%= lang.charAt(0).toUpperCase() + lang.slice(1) %> Translations</h3>
+            <ul class="translation-list">
+                <% translations.filter(trans => trans.language === lang).forEach(trans => { %>
+                    <li><%= trans.word %> → <%= trans.translation %></li>
+                <% }) %>
+            </ul>
+        <% }) %>
+    </div>
+
+    <script>
+        let messageCount = 1;
+        function addMessage() {
+            const messagesDiv = document.getElementById('messages');
+            const newMessage = document.createElement('div');
+            newMessage.classList.add('message-box');
+            newMessage.innerHTML = `
+                <label>Message ${messageCount + 1} Text:</label>
+                <textarea name="messages[${messageCount}][text]" required></textarea>
+                <label>Sender:</label>
+                <select name="messages[${messageCount}][sender]">
+                    <option value="received">Received</option>
+                    <option value="sent">Sent</option>
+                </select>
+                <label>Delay (ms):</label>
+                <input type="number" name="messages[${messageCount}][delay]" value="2000">
+            `;
+            messagesDiv.appendChild(newMessage);
+            messageCount++;
+        }
+    </script>
+</body>
+</html>

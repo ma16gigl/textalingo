@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Premium - TextALingo</title>
+    <link rel="icon" type="image/x-icon" href="/Assets/favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, "San Francisco", Arial, sans-serif;
+            background-color: #F40673; /* Pink background */
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        #premium-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        h1 .brand {
+            color: #101823; /* Blue-gray for "TextALingo" */
+        }
+
+        #premium-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+
+        #pricing-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .pricing-card {
+            background-color: #fff;
+            color: #000;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .pricing-card.most-popular {
+            border: 3px solid #FFD700; /* Gold border for Most Popular */
+        }
+
+        .pricing-card.most-popular::before {
+            content: "Most Popular";
+            position: absolute;
+            top: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #FFD700;
+            color: #000;
+            padding: 0.3rem 1rem;
+            border-radius: 12px 12px 0 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .pricing-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-card .price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #F40673; /* Pink price */
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-card .savings {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-card .description {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-card button {
+            background-color: #101823; /* Blue-gray button */
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .pricing-card button:hover {
+            background-color: #2a3444; /* Darker blue-gray on hover */
+        }
+
+        .pricing-card .cancel-text {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        #benefits {
+            margin-top: 2rem;
+            font-size: 1.1rem;
+            max-width: 800px;
+        }
+
+        #benefits ul {
+            list-style: none;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        #benefits li {
+            margin-bottom: 0.75rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        #benefits li::before {
+            content: "✓";
+            color: #FFD700; /* Gold checkmark */
+            position: absolute;
+            left: 0;
+        }
+
+        #charity {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            max-width: 600px;
+            opacity: 0.9;
+        }
+
+        #charity a {
+            color: #FFD700; /* Gold link */
+            text-decoration: none;
+        }
+
+        #charity a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 900px) {
+            #pricing-options {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .pricing-card {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #premium-screen {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            #premium-subtitle {
+                font-size: 1rem;
+            }
+
+            .pricing-card {
+                padding: 1.5rem;
+            }
+
+            .pricing-card h2 {
+                font-size: 1.3rem;
+            }
+
+            .pricing-card .price {
+                font-size: 1.8rem;
+            }
+
+            .pricing-card button {
+                padding: 0.5rem 1rem;
+            }
+
+            #benefits {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="premium-screen">
+        <h1>Unlock the Full <span class="brand">TextALingo</span> Experience!</h1>
+        <p id="premium-subtitle">Join our Premium community and dive into a world of unlimited stories, daily updates, and powerful learning tools—while supporting endangered languages.</p>
+        <div id="pricing-options">
+            <div class="pricing-card">
+                <h2>Monthly</h2>
+                <div class="price">$5.99/mo</div>
+                <div class="description">Perfect for trying out Premium with flexibility.</div>
+                <button data-plan="monthly">Get Started</button>
+                <div class="cancel-text">Cancel Anytime</div>
+            </div>
+            <div class="pricing-card most-popular">
+                <h2>Annual</h2>
+                <div class="price">$49/yr</div>
+                <div class="savings">Save 32% compared to monthly ($71.88/yr)!</div>
+                <div class="description">Our best value—enjoy a year of Premium at a discount.</div>
+                <button data-plan="annual">Get Started</button>
+                <div class="cancel-text">Cancel Anytime</div>
+            </div>
+            <div class="pricing-card">
+                <h2>Lifetime</h2>
+                <div class="price">$99</div>
+                <div class="description">One-time payment for unlimited access forever.</div>
+                <button data-plan="lifetime">Get Started</button>
+                <div class="cancel-text">Cancel Anytime</div>
+            </div>
+        </div>
+        <div id="benefits">
+            <strong>Why Go Premium?</strong>
+            <ul>
+                <li><strong>Unlimited Stories:</strong> Access every story, anytime, without limits.</li>
+                <li><strong>Daily New Releases:</strong> Fresh stories every day to keep your learning exciting.</li>
+                <li><strong>Vocabulary Tools:</strong> Save words and practice with flashcards.</li>
+                <li><strong>Support a Cause:</strong> A portion of your subscription helps 7000.org preserve endangered languages.</li>
+            </ul>
+        </div>
+        <div id="charity">
+            We’re proud to support <a href="https://7000.org" target="_blank">7000.org</a>. Their mission is to empower communities to teach, learn, and sustain their endangered languages.
+        </div>
+    </div>
+    <script>
+        const stripe = Stripe('pk_test_51R8Q6kPaz9K9KC7GId5KjnNMrSZcuvJRLprAXP5o9XrTKAqTVBuu9roS4nZMQJrUtBPuTojLvSQAFK3TrUUr31hA003438GGL3');
+        
+        document.querySelectorAll('#pricing-options button').forEach(button => {
+            button.addEventListener('click', async () => {
+                const plan = button.getAttribute('data-plan');
+                button.disabled = true;
+                button.textContent = 'Processing...';
+    
+                try {
+                    console.log(`Initiating checkout for plan: ${plan}`);
+                    console.log('Fetching from:', '/.netlify/functions/create-checkout-session');
+                    const response = await fetch('/.netlify/functions/create-checkout-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ plan })
+                    });
+    
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Fetch failed with status ${response.status}: ${errorText}`);
+                    }
+    
+                    const { id } = await response.json();
+                    console.log('Checkout session ID:', id);
+                    const { error } = await stripe.redirectToCheckout({ sessionId: id });
+                    if (error) {
+                        throw new Error(`Stripe redirect error: ${error.message}`);
+                    }
+                } catch (error) {
+                    console.error('Checkout error:', error);
+                    alert('Failed to initiate checkout. Please check the console for details.');
+                    button.disabled = false;
+                    button.textContent = 'Get Started';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

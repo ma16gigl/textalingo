@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7XY0EH7LJN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7XY0EH7LJN');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TextALingo</title>
+    <link rel="icon" type="image/x-icon" href="/Assets/favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans&display=swap" rel="stylesheet">
+    <meta property="og:title" content="TextALingo - Learn Languages Through Stories">
+    <meta property="og:description" content="Master a new language with engaging text message stories on TextALingo.">
+    <meta property="og:image" content="https://textalingo.com/Assets/socialshare.jpg">
+    <meta property="og:url" content="https://textalingo.com">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TextALingo - Learn Languages Through Stories">
+    <meta name="twitter:description" content="Master a new language with engaging text message stories on TextALingo.">
+    <meta name="twitter:image" content="https://textalingo.com/Assets/socialshare.jpg">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="initial-splash" class="screen">
+        <img src="/Assets/logo.jpg" alt="TextaLingo Logo" id="logo">
+        <button id="get-started-btn">Get Started</button>
+    </div>
+    <div id="language-splash" class="screen hidden">
+        <h2>What language are you learning?</h2>
+        <div id="language-list">
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/italian.png" alt="Italian" data-lang="italian" class="lang-img" onclick="selectLanguage('italian')">
+                    <span>Italian</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/spanish.png" alt="Spanish" data-lang="spanish" class="lang-img" onclick="selectLanguage('spanish')">
+                    <span>Spanish</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/french.png" alt="French" data-lang="french" class="lang-img" onclick="selectLanguage('french')">
+                    <span>French</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/german.png" alt="German" data-lang="german" class="lang-img" onclick="selectLanguage('german')">
+                    <span>German</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/japanese.png" alt="Japanese" data-lang="japanese" class="lang-img" onclick="selectLanguage('japanese')">
+                    <span>Japanese</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/korean.png" alt="Korean" data-lang="korean" class="lang-img" onclick="selectLanguage('korean')">
+                    <span>Korean</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/chinese.png" alt="Chinese" data-lang="chinese" class="lang-img" onclick="selectLanguage('chinese')">
+                    <span>Chinese</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/hindi.png" alt="Hindi" data-lang="hindi" class="lang-img" onclick="selectLanguage('hindi')">
+                    <span>Hindi</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/russian.png" alt="Russian" data-lang="russian" class="lang-img" onclick="selectLanguage('russian')">
+                    <span>Russian</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/portuguese.png" alt="Portuguese" data-lang="portuguese" class="lang-img" onclick="selectLanguage('portuguese')">
+                    <span>Portuguese</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/turkish.png" alt="Turkish" data-lang="turkish" class="lang-img" onclick="selectLanguage('turkish')">
+                    <span>Turkish</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/dutch.png" alt="Dutch" data-lang="dutch" class="lang-img" onclick="selectLanguage('dutch')">
+                    <span>Dutch</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/greek.png" alt="Greek" data-lang="greek" class="lang-img" onclick="selectLanguage('greek')">
+                    <span>Greek</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/polish.png" alt="Polish" data-lang="polish" class="lang-img" onclick="selectLanguage('polish')">
+                    <span>Polish</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/ukrainian.png" alt="Ukrainian" data-lang="ukrainian" class="lang-img" onclick="selectLanguage('ukrainian')">
+                    <span>Ukrainian</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/hebrew.png" alt="Hebrew" data-lang="hebrew" class="lang-img" onclick="selectLanguage('hebrew')">
+                    <span>Hebrew</span>
+                </div>
+            </div>
+            <div class="flag-row">
+                <div class="flag-container">
+                    <img src="/Assets/swedish.png" alt="Swedish" data-lang="swedish" class="lang-img" onclick="selectLanguage('swedish')">
+                    <span>Swedish</span>
+                </div>
+                <div class="flag-container">
+                    <img src="/Assets/irish.png" alt="Irish" data-lang="irish" class="lang-img" onclick="selectLanguage('irish')">
+                    <span>Irish</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="home" class="screen hidden">
+        <div id="language-menu">
+            <img id="language-icon" alt="Selected Language" src="" class="lang-icon">
+            <div id="language-dropdown" class="dropdown hidden"></div>
+        </div>
+        <button id="home-back-btn" class="hidden">Sign Out</button>
+        <button id="my-words-btn" class="hidden">My Words</button>
+        <button id="profile-btn" class="hidden">Profile</button>
+        <button id="admin-btn" class="hidden" onclick="showAdmin()">Admin Panel</button>
+        <div id="story-tiles"></div>
+    </div>
+    <div id="story-screen" class="screen hidden">
+        <div class="button-container">
+            <button id="back-btn"><img src="/Assets/back.jpg" alt="Back"></button>
+            <button id="font-size-btn"><img src="/Assets/textsize.jpg" alt="Font Size" onerror="console.error('Failed to load /Assets/textsize.jpg'); this.src='https://via.placeholder.com/40?text=FS';"></button>
+            <button id="words-btn"><img src="/Assets/words.jpg" alt="Words" onerror="console.error('Failed to load /Assets/words.jpg'); this.src='https://via.placeholder.com/40?text=W';"></button>
+        </div>
+        <div id="messages"></div>
+    </div>
+    <div id="my-words-screen" class="screen hidden">
+        <button id="my-words-back-btn">Back</button>
+        <div id="favorite-words"></div>
+    </div>
+    <div id="profile-screen" class="screen hidden">
+        <button id="profile-back-btn">Back</button>
+        <h1>Your Profile</h1>
+        <div id="profile-info"></div>
+    </div>
+    <div id="admin-screen" class="screen hidden">
+        <h1>Admin Panel</h1>
+        <button id="admin-back-btn" onclick="hideAdmin()">Back to Home</button>
+        <div id="admin-content" class="scrollable">
+            <h2>Add a New Story</h2>
+            <form id="add-story-form">
+                <label>Language:</label>
+                <select id="admin-language">
+                    <option value="italian">Italian</option>
+                    <option value="spanish">Spanish</option>
+                    <option value="french">French</option>
+                    <option value="german">German</option>
+                    <option value="japanese">Japanese</option>
+                    <option value="korean">Korean</option>
+                    <option value="chinese">Chinese</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="russian">Russian</option>
+                    <option value="portuguese">Portuguese</option>
+                    <option value="turkish">Turkish</option>
+                    <option value="dutch">Dutch</option>
+                    <option value="greek">Greek</option>
+                    <option value="polish">Polish</option>
+                    <option value="ukrainian">Ukrainian</option>
+                    <option value="hebrew">Hebrew</option>
+                    <option value="swedish">Swedish</option>
+                    <option value="irish">Irish</option>
+                </select>
+                <label>Title:</label>
+                <input id="admin-title" type="text" required>
+                <label>Is New:</label>
+                <select id="admin-is-new">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <label>Popular Now:</label>
+                <select id="admin-popular-now">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <label>Premium:</label>
+                <select id="admin-premium">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <label>Category:</label>
+                <select id="admin-category">
+                    <option value="Romance">Romance</option>
+                    <option value="Thriller">Thriller</option>
+                    <option value="Horror">Horror</option>
+                    <option value="Action/Adventure">Action/Adventure</option>
+                    <option value="SciFi">SciFi</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Business/Professional">Business/Professional</option>
+                    <option value="Mystery">Mystery</option>
+                    <option value="">None</option>
+                </select>
+                <label>Cover Photo (URL):</label>
+                <input id="admin-cover-photo" type="text" placeholder="https://example.com/image.jpg">
+                <div id="admin-messages">
+                    <label>Message 1 Text:</label>
+                    <textarea id="message-0-text" required></textarea>
+                    <label>Sender:</label>
+                    <select id="message-0-sender">
+                        <option value="received">Received</option>
+                        <option value="sent">Sent</option>
+                    </select>
+                    <label>Delay (ms):</label>
+                    <input id="message-0-delay" type="number" value="2000">
+                </div>
+                <button type="button" onclick="addAdminMessage()">Add Message</button>
+                <button type="submit">Save Story</button>
+            </form>
+            <h2>Bulk Add Translations</h2>
+            <form id="bulk-translation-form">
+                <label>Language:</label>
+                <select id="bulk-translation-language">
+                    <option value="italian">Italian</option>
+                    <option value="spanish">Spanish</option>
+                    <option value="french">French</option>
+                    <option value="german">German</option>
+                    <option value="japanese">Japanese</option>
+                    <option value="korean">Korean</option>
+                    <option value="chinese">Chinese</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="russian">Russian</option>
+                    <option value="portuguese">Portuguese</option>
+                    <option value="turkish">Turkish</option>
+                    <option value="dutch">Dutch</option>
+                    <option value="greek">Greek</option>
+                    <option value="polish">Polish</option>
+                    <option value="ukrainian">Ukrainian</option>
+                    <option value="hebrew">Hebrew</option>
+                    <option value="swedish">Swedish</option>
+                    <option value="irish">Irish</option>
+                </select>
+                <label>Translations (sentence,translation per line):</label>
+                <textarea id="bulk-translation-text" rows="10" placeholder="e.g.\nCiao, come stai?,Hello, how are you?\nBene, grazie!,Good, thank you!" required></textarea>
+                <button type="submit">Save Translations</button>
+            </form>
+            <h2>Bulk Add Stories</h2>
+            <form id="bulk-story-form" class="admin-form">
+                <div class="form-row">
+                    <label for="bulk-story-language">Language:</label>
+                    <select id="bulk-story-language">
+                        <option value="italian">Italian</option>
+                        <option value="spanish">Spanish</option>
+                        <option value="french">French</option>
+                        <option value="german">German</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="korean">Korean</option>
+                        <option value="chinese">Chinese</option>
+                        <option value="hindi">Hindi</option>
+                        <option value="russian">Russian</option>
+                        <option value="portuguese">Portuguese</option>
+                        <option value="turkish">Turkish</option>
+                        <option value="dutch">Dutch</option>
+                        <option value="greek">Greek</option>
+                        <option value="polish">Polish</option>
+                        <option value="ukrainian">Ukrainian</option>
+                        <option value="hebrew">Hebrew</option>
+                        <option value="swedish">Swedish</option>
+                        <option value="irish">Irish</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="bulk-story-title">Title:</label>
+                    <input id="bulk-story-title" type="text" required placeholder="Enter story title">
+                </div>
+                <div class="form-row">
+                    <label for="bulk-story-is-new">Is New:</label>
+                    <select id="bulk-story-is-new">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="bulk-popular-now">Popular Now:</label>
+                    <select id="bulk-popular-now">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="bulk-premium">Premium:</label>
+                    <select id="bulk-premium">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="bulk-story-category">Category:</label>
+                    <select id="bulk-story-category">
+                        <option value="Romance">Romance</option>
+                        <option value="Thriller">Thriller</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Action/Adventure">Action/Adventure</option>
+                        <option value="SciFi">SciFi</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Business/Professional">Business/Professional</option>
+                        <option value="Mystery">Mystery</option>
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="bulk-cover-photo">Cover Photo (URL):</label>
+                    <input id="bulk-cover-photo" type="text" placeholder="Generated or enter URL">
+                </div>
+                <div class="form-row form-button-row">
+                    <label></label>
+                    <button type="button" id="generate-cover-btn" onclick="generateCoverPhoto()">Generate Cover Photo</button>
+                </div>
+                <div class="form-row">
+                    <label for="bulk-story-delay">Delay (ms):</label>
+                    <input id="bulk-story-delay" type="number" value="2000" required>
+                </div>
+                <div class="form-row textarea-row">
+                    <label for="bulk-story-text">Messages and Translations:</label>
+                    <textarea id="bulk-story-text" rows="10" placeholder="Format each line as: foreign sentence (English translation) sender
+e.g.
+Ciao (Hello) received
+Come stai? (How are you?) sent" required></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button type="button" id="generate-story-btn" onclick="generateStory()">Generate Story</button>
+                    <button type="submit">Save Story</button>
+                </div>
+            </form>
+            <h2>Edit Stories</h2>
+            <label>Language:</label>
+            <select id="edit-story-language" onchange="loadStoryList()">
+                <option value="italian">Italian</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="japanese">Japanese</option>
+                <option value="korean">Korean</option>
+                <option value="chinese">Chinese</option>
+                <option value="hindi">Hindi</option>
+                <option value="russian">Russian</option>
+                <option value="portuguese">Portuguese</option>
+                <option value="turkish">Turkish</option>
+                <option value="dutch">Dutch</option>
+                <option value="greek">Greek</option>
+                <option value="polish">Polish</option>
+                <option value="ukrainian">Ukrainian</option>
+                <option value="hebrew">Hebrew</option>
+                <option value="swedish">Swedish</option>
+                <option value="irish">Irish</option>
+            </select>
+            <div id="story-list"></div>
+            <form id="edit-story-form" class="hidden">
+                <h3>Edit Story</h3>
+                <input type="hidden" id="edit-story-id">
+                <label>Language:</label>
+                <select id="edit-language" disabled>
+                    <option value="italian">Italian</option>
+                    <option value="spanish">Spanish</option>
+                    <option value="french">French</option>
+                    <option value="german">German</option>
+                    <option value="japanese">Japanese</option>
+                    <option value="korean">Korean</option>
+                    <option value="chinese">Chinese</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="russian">Russian</option>
+                    <option value="portuguese">Portuguese</option>
+                    <option value="turkish">Turkish</option>
+                    <option value="dutch">Dutch</option>
+                    <option value="greek">Greek</option>
+                    <option value="polish">Polish</option>
+                    <option value="ukrainian">Ukrainian</option>
+                    <option value="hebrew">Hebrew</option>
+                    <option value="swedish">Swedish</option>
+                    <option value="irish">Irish</option>
+                </select>
+                <label>Title:</label>
+                <input id="edit-story-title" type="text" required>
+                <label>Is New:</label>
+                <select id="edit-story-is-new">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <label>Popular Now:</label>
+                <select id="edit-popular-now">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <label>Premium:</label>
+                <select id="edit-premium">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <label>Category:</label>
+                <select id="edit-story-category">
+                    <option value="Romance">Romance</option>
+                    <option value="Thriller">Thriller</option>
+                    <option value="Horror">Horror</option>
+                    <option value="Action/Adventure">Action/Adventure</option>
+                    <option value="SciFi">SciFi</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Business/Professional">Business/Professional</option>
+                    <option value="Mystery">Mystery</option>
+                    <option value="">None</option>
+                </select>
+                <label>Cover Photo (URL):</label>
+                <input id="edit-cover-photo" type="text" placeholder="https://example.com/image.jpg">
+                <div id="edit-messages"></div>
+                <button type="button" onclick="addEditMessage()">Add Message</button>
+                <button type="submit">Save Changes</button>
+                <button type="button" onclick="document.getElementById('edit-story-form').classList.add('hidden')">Cancel</button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js" defer></script>
+</body>
+</html>

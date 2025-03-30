@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Story - TextaLingo Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007aff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        .message-box {
+            margin: 10px 0;
+            border: 1px dashed #ccc;
+            padding: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Edit Story: <%- story.title %></h1>
+    <form action="/admin/update-story/<%- story.id %>" method="POST">
+        <label for="language">Language:</label>
+        <select id="language" name="language">
+            <% const languages = ['italian', 'spanish', 'french', 'german']; %>
+            <% languages.forEach(lang => { %>
+                <option value="<%= lang %>" <%= story.language === lang ? 'selected' : '' %>><%= lang.charAt(0).toUpperCase() + lang.slice(1) %></option>
+            <% }); %>
+        </select>
+
+        <label for="title">Story Title:</label>
+        <input type="text" id="title" name="title" value="<%- story.title %>" required>
+
+        <label for="is_new">Is it new?</label>
+        <select id="is_new" name="is_new">
+            <% const isNewOptions = [{ value: 0, text: 'No' }, { value: 1, text: 'Yes' }]; %>
+            <% isNewOptions.forEach(option => { %>
+                <option value="<%= option.value %>" <%= story.is_new == option.value ? 'selected' : '' %>><%= option.text %></option>
+            <% }); %>
+        </select>
+
+        <h2>Messages</h2>
+        <div id="messages">
+            <% messages.forEach((msg, index) => { %>
+                <div class="message-box">
+                    <label>Message <%= index + 1 %> Text:</label>
+                    <textarea name="messages[<%= index %>][text]" required><%- msg.text %></textarea>
+                    <label>Sender:</label>
+                    <select name="messages[<%= index %>][sender]">
+                        <% const senderOptions = ['received', 'sent']; %>
+                        <% senderOptions.forEach(sender => { %>
+                            <option value="<%= sender %>" <%= msg.sender === sender ? 'selected' : '' %>><%= sender.charAt(0).toUpperCase() + sender.slice(1) %></option>
+                        <% }); %>
+                    </select>
+                    <label>Delay (ms):</label>
+                    <input type="number" name="messages[<%= index %>][delay]" value="<%= msg.delay || 2000 %>">
+                </div>
+            <% }); %>
+        </div>
+        <input type="hidden" id="messageCount" value="<%= messages && messages.length >= 0 ? messages.length : 0 %>">
+        <button type="button" onclick="addMessage()">Add Another Message</button>
+        <br><br>
+        <button type="submit">Update Story</button>
+    </form>
+
+    <script type="text/javascript">
+        var messageCount = parseInt(document.getElementById('messageCount').value);
+        function addMessage() {
+            const messagesDiv = document.getElementById('messages');
+            const newMessage = document.createElement('div');
+            newMessage.classList.add('message-box');
+            newMessage.innerHTML = `
+                <label>Message ${messageCount + 1} Text:</label>
+                <textarea name="messages[${messageCount}][text]" required></textarea>
+                <label>Sender:</label>
+                <select name="messages[${messageCount}][sender]">
+                    <option value="received">Received</option>
+                    <option value="sent">Sent</option>
+                </select>
+                <label>Delay (ms):</label>
+                <input type="number" name="messages[${messageCount}][delay]" value="2000">
+            `;
+            messagesDiv.appendChild(newMessage);
+            messageCount++;
+        }
+    </script>
+</body>
+</html>

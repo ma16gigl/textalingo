@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success - TextALingo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h1>Thank You!</h1>
+    <p>Your payment was successful. Redirecting to home...</p>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session_id');
+        if (sessionId) {
+            handlePaymentSuccess(sessionId);
+        } else {
+            setTimeout(() => window.location.href = '/', 2000);
+        }
+    </script>
+</body>
+</html>
