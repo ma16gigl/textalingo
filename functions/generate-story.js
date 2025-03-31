@@ -24,7 +24,7 @@ exports.handler = async (event, context) => {
         'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'grok', // Default model as per xAI docs
+        model: 'grok-2-1212', // Confirmed latest model
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 1000,
         temperature: 0.9,
