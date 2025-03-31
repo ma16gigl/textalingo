@@ -806,54 +806,7 @@ document.getElementById("add-story-form").addEventListener("submit", async (e) =
     `;
 });
 
-function addAdminMessage() {
-    const messagesDiv = document.getElementById("admin-messages");
-    const newMessage = document.createElement("div");
-    newMessage.innerHTML = `
-        <label>Message ${adminMessageCount + 1} Text:</label>
-        <textarea id="message-${adminMessageCount}-text" required></textarea>
-        <label>Sender:</label>
-        <select id="message-${adminMessageCount}-sender">
-            <option value="received">Received</option>
-            <option value="sent">Sent</option>
-        </select>
-        <label>Delay (ms):</label>
-        <input id="message-${adminMessageCount}-delay" type="number" value="2000">
-    `;
-    messagesDiv.appendChild(newMessage);
-    adminMessageCount++;
-}
 
-document.getElementById("bulk-translation-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const language = document.getElementById("bulk-translation-language").value;
-    const text = document.getElementById("bulk-translation-text").value.trim();
-    
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-    const translationData = lines.map(line => {
-        const [message_text, translation] = line.split(',').map(part => part.trim());
-        if (!message_text || !translation) {
-            throw new Error(`Invalid format in line: "${line}". Expected "sentence,translation".`);
-        }
-        return { language, message_text: message_text.toLowerCase(), translation };
-    });
-
-    const { error } = await supabase.from('message_translations').insert(translationData);
-    if (error) {
-        console.error("Error adding bulk translations:", error.message);
-        alert("Failed to add translations: " + error.message);
-        return;
-    }
-
-    if (language === currentLanguage) {
-        translationData.forEach(({ message_text, translation }) => {
-            translations[message_text] = translation;
-        });
-    }
-    
-    alert(`Added ${translationData.length} translations successfully!`);
-    document.getElementById("bulk-translation-text").value = "";
-});
 
 async function generateStory() {
     const language = document.getElementById("bulk-story-language").value;

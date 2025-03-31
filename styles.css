@@ -260,6 +260,41 @@ textarea {
     transform: scale(1.05);
 }
 
+.story-tile.series {
+    position: relative;
+    transform-style: preserve-3d;
+    overflow: visible; /* Allow pseudo-elements to show outside the tile */
+}
+
+.story-tile.series::before,
+.story-tile.series::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit; /* Match the tile's background */
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: -1; /* Behind the main tile */
+}
+
+.story-tile.series::before {
+    transform: translate(-5px, -5px); /* Slightly offset to the left/top */
+    opacity: 0.8;
+}
+
+.story-tile.series::after {
+    transform: translate(-10px, -10px); /* Further offset for depth */
+    opacity: 0.6;
+}
+
+.story-tile.series .title {
+    background: rgba(0, 0, 0, 0.8); /* Darker to stand out */
+    font-size: clamp(1.2rem, 2.5vw, 1.4rem); /* Slightly larger for emphasis */
+}
+
 .story-tile img {
     width: 100%;
     height: 100%;
@@ -478,15 +513,15 @@ html[lang="he"] .back-container,
 
 /* Admin Panel */
 .scrollable {
-    width: 100%;
-    max-width: 1200px;
-    max-height: 80vh;
+    width: 90%; /* Widened from 100% with max-width */
+    max-width: 1400px; /* Increased from 1200px for a wider canvas */
+    max-height: 85vh; /* Slightly more vertical space */
     overflow-y: auto;
     padding: 2rem;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
+    margin: 0 auto 1rem auto; /* Centered with bottom margin */
 }
 
 #admin-messages div, #edit-messages div {
@@ -498,7 +533,6 @@ html[lang="he"] .back-container,
 
 #story-list {
     width: 100%;
-    max-width: 800px;
     margin-top: 1rem;
 }
 
@@ -514,7 +548,7 @@ html[lang="he"] .back-container,
 }
 
 .story-item span {
-    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-size: clamp(1rem, 2vw, 1.2rem); /* Adjusted for better readability */
 }
 
 .story-item button {
@@ -534,6 +568,7 @@ html[lang="he"] .back-container,
 .story-item button.delete-btn:hover {
     background-color: #d32f2f;
 }
+
 
 /* Story Screen Layout */
 #story-screen {
@@ -679,24 +714,25 @@ html[lang="he"] .back-container,
 /* Admin Form Styling */
 .admin-form {
     width: 100%;
-    max-width: 1000px;
-    padding: 1.5rem;
+    max-width: 1200px; /* Increased from 1000px for wider forms */
+    padding: 2rem; /* Increased padding for comfort */
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 0 auto; /* Centered */
 }
 
 .form-row {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
-    gap: 1rem;
+    margin-bottom: 1.5rem; /* Increased spacing */
+    gap: 1.5rem; /* Increased gap for better separation */
 }
 
 .form-row label {
-    flex: 0 0 200px;
+    flex: 0 0 250px; /* Widened from 200px for better label visibility */
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.2rem; /* Slightly larger for readability */
     color: #333;
     text-align: right;
 }
@@ -705,9 +741,8 @@ html[lang="he"] .back-container,
 .form-row select,
 .form-row textarea {
     flex: 1;
-    max-width: none;
     padding: 0.75rem;
-    font-size: 1rem;
+    font-size: 1.1rem; /* Slightly larger text */
     border: 1px solid #ccc;
     border-radius: 4px;
 }
@@ -717,20 +752,20 @@ html[lang="he"] .back-container,
 }
 
 .form-row textarea {
-    min-height: 200px;
+    min-height: 250px; /* Increased height for more text visibility */
     resize: vertical;
 }
 
 .form-buttons {
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1rem;
+    gap: 1.5rem; /* Increased gap */
+    margin-top: 1.5rem; /* Increased spacing */
 }
 
 .form-buttons button {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.1rem;
+    padding: 0.75rem 2rem; /* Wider buttons */
+    font-size: 1.2rem; /* Larger text */
     border-radius: 4px;
 }
 
@@ -740,6 +775,33 @@ html[lang="he"] .back-container,
 
 .admin-form button[type="submit"]:hover {
     background-color: #2ba844;
+}
+
+/* Form Button Row (for Generate Cover Photo button) */
+.form-button-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1.5rem;
+}
+
+.form-button-row label {
+    flex: 0 0 250px; /* Match form-row label width */
+}
+
+.form-button-row button {
+    padding: 0.75rem 2rem; /* Wider button */
+    font-size: 1.2rem; /* Larger text */
+    background-color: #ff9500;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.form-button-row button:hover {
+    background-color: #e87b00;
 }
 
 /* Form Button Row (for Generate Cover Photo button) */
@@ -795,6 +857,11 @@ html[lang="he"] .back-container,
     scroll-snap-align: start;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-track .story-tile.series {
+    width: 13%; /* Slightly wider to emphasize */
+    min-width: 140px;
 }
 
 .carousel-track .story-tile .title {
@@ -917,6 +984,10 @@ footer a {
         width: 120px;
         min-width: 100px;
     }
+    .carousel-track .story-tile.series {
+        width: 130px;
+        min-width: 110px;
+    }
     .carousel-track .story-tile .title {
         font-size: 0.8rem;
         padding: 3px;
@@ -945,6 +1016,12 @@ footer a {
         padding: 0.75rem 0.25rem;
         font-size: 1.2rem;
     }
+    .story-tile.series::before {
+        transform: translate(-3px, -3px);
+    }
+    .story-tile.series::after {
+        transform: translate(-6px, -6px);
+    }
 }
 
 /* Responsive Adjustments for Admin Form */
@@ -967,5 +1044,10 @@ footer a {
     }
     .form-buttons {
         justify-content: center;
+    }
+    .scrollable {
+        width: 100%;
+        max-width: none;
+        padding: 1rem;
     }
 }
