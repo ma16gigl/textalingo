@@ -767,30 +767,29 @@ document.getElementById("bulk-translation-form").addEventListener("submit", asyn
 async function generateStory() {
     const language = document.getElementById("bulk-story-language").value;
     const category = document.getElementById("bulk-story-category").value || "General";
-    const prompt = `Generate a completely unique, highly creative, and engaging ${category} themed text message story in ${language} with English translations. The story must be a realistic text messaging dialogue between two people who are not in the same location (e.g., one is at home, the other is traveling), set in a specific and imaginative context (e.g., a bustling market, a mysterious forest, a futuristic city). It should consist of at least 30 messages. Format each line as: foreign sentence (English translation) received or sent, with no quotation marks around the entire line (since people don’t use quotes when texting). Do not include numbers or character names before each sentence. Use spaces or other punctuation within the foreign sentence and English translation, but do not use parentheses within them; reserve parentheses only for separating the English translation. Avoid bland or generic exchanges; make the dialogue dynamic, emotional, and full of surprises to captivate the reader. Example: Ciao ti ho visto al mercato oggi ma eri lontano (Hello I saw you at the market today but you were far away) sent`;
 
     try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch('/.netlify/functions/generate-story', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` // Use environment variable
             },
-            body: JSON.stringify({
-                model: "gpt-4-turbo-preview",
-                messages: [{ role: "user", content: prompt }],
-                max_tokens: 3000,
-                temperature: 0.9
-            })
+            body: JSON.stringify({ language, category }),
         });
 
         if (!response.ok) {
-            throw new Error(`OpenAI API error: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        const storyText = data.choices[0].message.content.trim();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const storyText = data.story;
         document.getElementById("bulk-story-text").value = storyText;
+        alert("Story generated successfully!");
     } catch (error) {
         console.error("Error generating story:", error);
         alert("Failed to generate story: " + error.message);
