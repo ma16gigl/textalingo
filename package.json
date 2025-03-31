@@ -16,5 +16,13 @@
     },
     "keywords": [],
     "author": "",
-    "license": "ISC"
+    "license": "ISC",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ma16gigl/textalingo.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ma16gigl/textalingo/issues"
+    },
+    "homepage": "https://github.com/ma16gigl/textalingo#readme"
 }
