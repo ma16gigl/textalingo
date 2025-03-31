@@ -142,15 +142,15 @@ async function loadHomeScreen(clearTiles = false) {
             .from('user_subscriptions')
             .select('status')
             .eq('user_id', user.id)
-            .limit(1); // Use limit(1) instead of single() to avoid 406
+            .limit(1);
         if (subError) {
             console.error("Error fetching subscription:", subError.message);
-            isPremiumUser = false;
         } else if (subData && subData.length > 0) {
             isPremiumUser = subData[0].status === 'active' || subData[0].status === 'paid';
         }
     }
 
+    console.log("Fetching stories for language:", currentLanguage);
     const { data: stories, count, error } = await supabase
         .from('stories')
         .select('*', { count: 'exact' })
@@ -159,13 +159,17 @@ async function loadHomeScreen(clearTiles = false) {
 
     if (error) {
         console.error("Error fetching stories:", error.message);
-        storyTiles.innerHTML = "<p>Failed to load stories. Please try again later.</p>";
+        storyTiles.innerHTML = `<p>Error loading stories: ${error.message}</p>`;
         return;
     }
+
+    console.log("Fetched stories:", stories);
+    console.log("Total story count:", count);
 
     hasMoreStories = count > currentPage * 10;
 
     if (!stories || stories.length === 0) {
+        console.log("No stories found for language:", currentLanguage);
         storyTiles.innerHTML = "<p>No stories available for this language yet.</p>";
         return;
     }
@@ -178,13 +182,16 @@ async function loadHomeScreen(clearTiles = false) {
         if (story.popular_now) categories["Popular Now"].push(story);
     });
 
-    const categoryOrder = ["Popular Now", "Romance", "Thriller", "Horror", "Action/Adventure", "SciFi", "Comedy", "Business/Professional", "Mystery", "Series", "Other"];
+    console.log("Categories populated:", categories);
+
+    const categoryOrder = ["Popular Now", "Series", "Romance", "Thriller", "Horror", "Action/Adventure", "SciFi", "Comedy", "Business/Professional", "Mystery", "Other"];
     const orderedCategories = {};
     categoryOrder.forEach(cat => {
         if (categories[cat]) orderedCategories[cat] = categories[cat];
     });
 
     for (const [category, catStories] of Object.entries(orderedCategories)) {
+        console.log(`Rendering category: ${category} with ${catStories.length} stories`);
         const section = document.createElement("div");
         section.classList.add("category-section");
 
@@ -211,7 +218,7 @@ async function loadHomeScreen(clearTiles = false) {
             tile.classList.add("story-tile");
             if (story.is_new) tile.classList.add("new");
             if (story.premium) tile.classList.add("premium");
-            if (story.category === "Series") tile.classList.add("series"); // Add series class
+            if (story.category === "Series") tile.classList.add("series");
             tile.innerHTML = `
                 <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
                 <div class="title">${story.title}</div>
@@ -255,7 +262,6 @@ async function loadHomeScreen(clearTiles = false) {
 
     await updateDropdown();
 }
-
 async function showCategoryStories(category) {
     const categoryScreen = document.createElement("div");
     categoryScreen.id = "category-screen";
@@ -675,6 +681,79 @@ fontSizeBtn.addEventListener("click", () => {
     fontSizeIndex = (fontSizeIndex + 1) % fontSizes.length;
     updateFontSize();
 });
+function toggleEpisodeField() {
+    const category = document.getElementById("bulk-story-category").value;
+    const episodeRow = document.getElementById("episode-row");
+    episodeRow.style.display = category === "Series" ? "flex" : "none";
+}
+async function loadSeriesOptions() {
+    const language = document.getElementById("bulk-story-language").value;
+    const seriesSelect = document.getElementById("bulk-series-select");
+    seriesSelect.innerHTML = '<option value="">-- Select an existing series --</option>';
+
+    const { data: seriesStories, error } = await supabase
+        .from('stories')
+        .select('title')
+        .eq('language', language)
+        .eq('category', 'Series')
+        .order('title');
+
+    if (error) {
+        console.error("Error loading series options:", error.message);
+        return;
+    }
+
+    if (seriesStories && seriesStories.length > 0) {
+        const seriesTitles = new Set();
+        seriesStories.forEach(story => {
+            const match = story.title.match(/^(.*?)\s*(Ep|Episode)\s*\d+$/i);
+            const baseTitle = match ? match[1].trim() : story.title;
+            seriesTitles.add(baseTitle);
+        });
+
+        seriesTitles.forEach(title => {
+            const option = document.createElement("option");
+            option.value = title;
+            option.textContent = title;
+            seriesSelect.appendChild(option);
+        });
+    }
+}
+function selectExistingSeries() {
+    const selectedSeries = document.getElementById("bulk-series-select").value;
+    if (selectedSeries) {
+        document.getElementById("bulk-story-category").value = "Series";
+        toggleEpisodeField();
+        document.getElementById("bulk-story-title").value = selectedSeries;
+        document.getElementById("bulk-story-text").value = "";
+        currentSeriesTitle = selectedSeries;
+
+        // Fetch the highest episode number for this series
+        supabase
+            .from('stories')
+            .select('title')
+            .eq('language', document.getElementById("bulk-story-language").value)
+            .eq('category', 'Series')
+            .like('title', `${selectedSeries}%`)
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error("Error fetching series episodes:", error.message);
+                    return;
+                }
+                let maxEpisode = 0;
+                data.forEach(story => {
+                    const match = story.title.match(/Ep(?:isode)?\s*(\d+)/i);
+                    if (match) {
+                        const episodeNum = Number(match[1]);
+                        maxEpisode = Math.max(maxEpisode, episodeNum);
+                    }
+                });
+                currentEpisodeNumber = maxEpisode;
+                document.getElementById("bulk-story-episode").value = maxEpisode + 1;
+                document.getElementById("generate-next-episode-btn").disabled = false;
+            });
+    }
+}
 
 document.getElementById("add-story-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -780,6 +859,7 @@ async function generateStory() {
     const language = document.getElementById("bulk-story-language").value;
     const category = document.getElementById("bulk-story-category").value || "General";
     const title = document.getElementById("bulk-story-title").value.trim();
+    const episode = category === "Series" ? Number(document.getElementById("bulk-story-episode").value) : 1;
 
     try {
         const response = await fetch('/.netlify/functions/generate-story', {
@@ -787,7 +867,7 @@ async function generateStory() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ language, category, title, episode: 1 }), // Pass episode 1 for initial story
+            body: JSON.stringify({ language, category, title, episode }),
         });
 
         if (!response.ok) {
@@ -802,13 +882,13 @@ async function generateStory() {
 
         const storyText = data.story;
         document.getElementById("bulk-story-text").value = storyText;
-        alert("Story generated successfully!");
+        alert(`Story${category === "Series" ? ` Episode ${episode}` : ""} generated successfully!`);
 
-        // If Series, set state and enable next episode button
         if (category === "Series") {
             currentSeriesTitle = title;
-            currentEpisodeNumber = 1;
+            currentEpisodeNumber = episode;
             document.getElementById("generate-next-episode-btn").disabled = false;
+            document.getElementById("bulk-story-episode").value = episode + 1; // Auto-increment for next episode
         }
     } catch (error) {
         console.error("Error generating story:", error);
@@ -824,7 +904,7 @@ async function generateNextEpisode() {
 
     const language = document.getElementById("bulk-story-language").value;
     const title = currentSeriesTitle;
-    currentEpisodeNumber++;
+    currentEpisodeNumber = Number(document.getElementById("bulk-story-episode").value);
 
     try {
         const response = await fetch('/.netlify/functions/generate-story', {
@@ -853,10 +933,65 @@ async function generateNextEpisode() {
         const storyText = data.story;
         document.getElementById("bulk-story-text").value = storyText;
         alert(`Episode ${currentEpisodeNumber} of "${title}" generated successfully!`);
+        document.getElementById("bulk-story-episode").value = currentEpisodeNumber + 1; // Auto-increment
     } catch (error) {
         console.error("Error generating next episode:", error);
         alert("Failed to generate next episode: " + error.message);
     }
+}
+
+async function addEpisode() {
+    const category = document.getElementById("bulk-story-category").value;
+    if (category !== "Series") {
+        alert("Please select the 'Series' category to add an episode.");
+        return;
+    }
+
+    const title = document.getElementById("bulk-story-title").value.trim();
+    const seriesSelect = document.getElementById("bulk-series-select").value;
+    const episodeInput = document.getElementById("bulk-story-episode");
+
+    if (!title && !seriesSelect) {
+        alert("Please enter a series title or select an existing series before adding an episode.");
+        return;
+    }
+
+    let baseTitle = title || seriesSelect;
+    let episodeNum;
+
+    if (currentSeriesTitle && (currentSeriesTitle === baseTitle || baseTitle.startsWith(currentSeriesTitle))) {
+        episodeNum = currentEpisodeNumber + 1;
+    } else {
+        // If no current series or switching to a new one, check for existing episodes
+        currentSeriesTitle = baseTitle;
+        const { data, error } = await supabase
+            .from('stories')
+            .select('title')
+            .eq('language', document.getElementById("bulk-story-language").value)
+            .eq('category', 'Series')
+            .like('title', `${baseTitle}%`);
+        
+        if (error) {
+            console.error("Error checking existing episodes:", error.message);
+            episodeNum = 1;
+        } else {
+            let maxEpisode = 0;
+            data.forEach(story => {
+                const match = story.title.match(/Ep(?:isode)?\s*(\d+)/i);
+                if (match) {
+                    const num = Number(match[1]);
+                    maxEpisode = Math.max(maxEpisode, num);
+                }
+            });
+            episodeNum = maxEpisode + 1;
+        }
+    }
+
+    document.getElementById("bulk-story-title").value = `${baseTitle} Episode ${episodeNum}`;
+    document.getElementById("bulk-story-text").value = ""; // Clear previous text
+    document.getElementById("bulk-story-episode").value = episodeNum;
+    document.getElementById("generate-next-episode-btn").disabled = false;
+    currentEpisodeNumber = episodeNum;
 }
 
 async function generateCoverPhoto() {
@@ -1054,7 +1189,7 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
 async function loadStoryList() {
     const language = document.getElementById("edit-story-language").value;
     console.log("Selected language:", language);
-    const { data: stories, error } = await supabase.from('stories').select('id, title').eq('language', language);
+    const { data: stories, error } = await supabase.from('stories').select('id, title, category').eq('language', language).order('title');
     
     console.log("Stories fetched from Supabase:", stories);
     console.log("Error (if any):", error);
@@ -1073,7 +1208,51 @@ async function loadStoryList() {
         return;
     }
 
+    // Group series by title prefix (assuming episodes are titled like "Series Name Ep 1")
+    const seriesGroups = {};
+    const nonSeriesStories = [];
     stories.forEach(story => {
+        if (story.category === "Series") {
+            const match = story.title.match(/^(.*?)\s*(Ep|Episode)\s*(\d+)/i);
+            const seriesTitle = match ? match[1].trim() : story.title;
+            if (!seriesGroups[seriesTitle]) seriesGroups[seriesTitle] = [];
+            seriesGroups[seriesTitle].push(story);
+        } else {
+            nonSeriesStories.push(story);
+        }
+    });
+
+    // Render series groups
+    for (const [seriesTitle, episodes] of Object.entries(seriesGroups)) {
+        const groupDiv = document.createElement("div");
+        groupDiv.classList.add("series-group");
+        groupDiv.innerHTML = `
+            <button class="series-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">${seriesTitle} (${episodes.length} Episodes)</button>
+            <div class="series-episodes hidden"></div>
+        `;
+        const episodesDiv = groupDiv.querySelector(".series-episodes");
+        episodes.sort((a, b) => {
+            const aNum = Number(a.title.match(/Ep(?:isode)?\s*(\d+)/i)?.[1] || 0);
+            const bNum = Number(b.title.match(/Ep(?:isode)?\s*(\d+)/i)?.[1] || 0);
+            return aNum - bNum;
+        });
+        episodes.forEach(story => {
+            const item = document.createElement("div");
+            item.classList.add("story-item");
+            item.innerHTML = `
+                <span>${story.title}</span>
+                <div>
+                    <button onclick="editStory('${story.id}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteStory('${story.id}')">Delete</button>
+                </div>
+            `;
+            episodesDiv.appendChild(item);
+        });
+        storyList.appendChild(groupDiv);
+    }
+
+    // Render non-series stories
+    nonSeriesStories.forEach(story => {
         const item = document.createElement("div");
         item.classList.add("story-item");
         item.innerHTML = `
@@ -1087,7 +1266,6 @@ async function loadStoryList() {
     });
     console.log("Story list populated with", stories.length, "stories");
 }
-
 async function deleteStory(storyId) {
     if (!confirm("Are you sure you want to delete this story? This action cannot be undone.")) {
         return;

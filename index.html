@@ -204,6 +204,7 @@
                     <option value="Comedy">Comedy</option>
                     <option value="Business/Professional">Business/Professional</option>
                     <option value="Mystery">Mystery</option>
+                    <option value="Series">Series</option>
                     <option value="">None</option>
                 </select>
                 <label>Cover Photo (URL):</label>
@@ -250,93 +251,106 @@
                 <button type="submit">Save Translations</button>
             </form>
             <h2>Bulk Add Stories</h2>
-            <form id="bulk-story-form" class="admin-form">
-                <div class="form-row">
-                    <label for="bulk-story-language">Language:</label>
-                    <select id="bulk-story-language">
-                        <option value="italian">Italian</option>
-                        <option value="spanish">Spanish</option>
-                        <option value="french">French</option>
-                        <option value="german">German</option>
-                        <option value="japanese">Japanese</option>
-                        <option value="korean">Korean</option>
-                        <option value="chinese">Chinese</option>
-                        <option value="hindi">Hindi</option>
-                        <option value="russian">Russian</option>
-                        <option value="portuguese">Portuguese</option>
-                        <option value="turkish">Turkish</option>
-                        <option value="dutch">Dutch</option>
-                        <option value="greek">Greek</option>
-                        <option value="polish">Polish</option>
-                        <option value="ukrainian">Ukrainian</option>
-                        <option value="hebrew">Hebrew</option>
-                        <option value="swedish">Swedish</option>
-                        <option value="irish">Irish</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label for="bulk-story-title">Title:</label>
-                    <input id="bulk-story-title" type="text" required placeholder="Enter story title">
-                </div>
-                <div class="form-row">
-                    <label for="bulk-story-is-new">Is New:</label>
-                    <select id="bulk-story-is-new">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label for="bulk-popular-now">Popular Now:</label>
-                    <select id="bulk-popular-now">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label for="bulk-premium">Premium:</label>
-                    <select id="bulk-premium">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label for="bulk-story-category">Category:</label>
-                    <select id="bulk-story-category">
-                        <option value="Romance">Romance</option>
-                        <option value="Thriller">Thriller</option>
-                        <option value="Horror">Horror</option>
-                        <option value="Action/Adventure">Action/Adventure</option>
-                        <option value="SciFi">SciFi</option>
-                        <option value="Comedy">Comedy</option>
-                        <option value="Business/Professional">Business/Professional</option>
-                        <option value="Mystery">Mystery</option>
-                        <option value="">None</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label for="bulk-cover-photo">Cover Photo (URL):</label>
-                    <input id="bulk-cover-photo" type="text" placeholder="Generated or enter URL">
-                </div>
-                <div class="form-row form-button-row">
-                    <label></label>
-                    <button type="button" id="generate-cover-btn" onclick="generateCoverPhoto()">Generate Cover Photo</button>
-                </div>
-                <div class="form-row">
-                    <label for="bulk-story-delay">Delay (ms):</label>
-                    <input id="bulk-story-delay" type="number" value="2000" required>
-                </div>
-                <div class="form-row textarea-row">
-                    <label for="bulk-story-text">Messages and Translations:</label>
-                    <textarea id="bulk-story-text" rows="10" placeholder="Format each line as: foreign sentence (English translation) sender
+<form id="bulk-story-form" class="admin-form">
+    <div class="form-row">
+        <label for="bulk-story-language">Language:</label>
+        <select id="bulk-story-language" onchange="loadSeriesOptions()">
+            <option value="italian">Italian</option>
+            <option value="spanish">Spanish</option>
+            <option value="french">French</option>
+            <option value="german">German</option>
+            <option value="japanese">Japanese</option>
+            <option value="korean">Korean</option>
+            <option value="chinese">Chinese</option>
+            <option value="hindi">Hindi</option>
+            <option value="russian">Russian</option>
+            <option value="portuguese">Portuguese</option>
+            <option value="turkish">Turkish</option>
+            <option value="dutch">Dutch</option>
+            <option value="greek">Greek</option>
+            <option value="polish">Polish</option>
+            <option value="ukrainian">Ukrainian</option>
+            <option value="hebrew">Hebrew</option>
+            <option value="swedish">Swedish</option>
+            <option value="irish">Irish</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="bulk-series-select">Existing Series (optional):</label>
+        <select id="bulk-series-select" onchange="selectExistingSeries()">
+            <option value="">-- Select an existing series --</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="bulk-story-title">Title:</label>
+        <input id="bulk-story-title" type="text" required placeholder="Enter story title">
+    </div>
+    <div class="form-row">
+        <label for="bulk-story-is-new">Is New:</label>
+        <select id="bulk-story-is-new">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="bulk-popular-now">Popular Now:</label>
+        <select id="bulk-popular-now">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="bulk-premium">Premium:</label>
+        <select id="bulk-premium">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="bulk-story-category">Category:</label>
+        <select id="bulk-story-category" onchange="toggleEpisodeField()">
+            <option value="Romance">Romance</option>
+            <option value="Thriller">Thriller</option>
+            <option value="Horror">Horror</option>
+            <option value="Action/Adventure">Action/Adventure</option>
+            <option value="SciFi">SciFi</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Business/Professional">Business/Professional</option>
+            <option value="Mystery">Mystery</option>
+            <option value="Series">Series</option>
+            <option value="">None</option>
+        </select>
+    </div>
+    <div class="form-row" id="episode-row" style="display: none;">
+        <label for="bulk-story-episode">Episode:</label>
+        <input id="bulk-story-episode" type="number" min="1" value="1" placeholder="Episode number">
+    </div>
+    <div class="form-row">
+        <label for="bulk-cover-photo">Cover Photo (URL):</label>
+        <input id="bulk-cover-photo" type="text" placeholder="Generated or enter URL">
+    </div>
+    <div class="form-row form-button-row">
+        <label></label>
+        <button type="button" id="generate-cover-btn" onclick="generateCoverPhoto()">Generate Cover Photo</button>
+    </div>
+    <div class="form-row">
+        <label for="bulk-story-delay">Delay (ms):</label>
+        <input id="bulk-story-delay" type="number" value="2000" required>
+    </div>
+    <div class="form-row textarea-row">
+        <label for="bulk-story-text">Messages and Translations:</label>
+        <textarea id="bulk-story-text" rows="10" placeholder="Format each line as: foreign sentence (English translation) sender
 e.g.
 Ciao (Hello) received
 Come stai? (How are you?) sent" required></textarea>
-                </div>
-                <div class="form-buttons">
-                    <button type="button" id="generate-story-btn" onclick="generateStory()">Generate Story</button>
-                    <button type="submit">Save Story</button>
-                </div>
-            </form>
+    </div>
+    <div class="form-buttons">
+        <button type="button" id="generate-story-btn" onclick="generateStory()">Generate Story</button>
+        <button type="button" id="generate-next-episode-btn" onclick="generateNextEpisode()" disabled>Generate Next Episode</button>
+        <button type="button" id="add-episode-btn" onclick="addEpisode()">Add Episode</button>
+        <button type="submit">Save Story</button>
+    </div>
+</form>
             <h2>Edit Stories</h2>
             <label>Language:</label>
             <select id="edit-story-language" onchange="loadStoryList()">
@@ -411,6 +425,7 @@ Come stai? (How are you?) sent" required></textarea>
                     <option value="Comedy">Comedy</option>
                     <option value="Business/Professional">Business/Professional</option>
                     <option value="Mystery">Mystery</option>
+                    <option value="Series">Series</option>
                     <option value="">None</option>
                 </select>
                 <label>Cover Photo (URL):</label>
