@@ -1,3 +1,4 @@
+// Force redeploy to ensure latest version - 2025-03-30
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
