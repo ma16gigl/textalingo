@@ -565,16 +565,17 @@ async function updateDropdown() {
 
     if (userError) {
         console.error("Error fetching user data:", userError.message);
-        return;
+        // Proceed as if no user is logged in
     }
 
     const user = userData?.user;
 
     if (!user) {
-        console.log("No user logged in, showing basic dropdown options.");
+        console.log("No user logged in, populating dropdown with guest options.");
         const signInBtn = document.createElement("button");
         signInBtn.textContent = "Sign In";
         signInBtn.addEventListener("click", () => {
+            console.log("Sign In clicked, redirecting to signin.html");
             window.location.href = "signin.html";
             languageDropdown.classList.add("hidden");
         });
@@ -582,6 +583,7 @@ async function updateDropdown() {
         const changeLangBtn = document.createElement("button");
         changeLangBtn.textContent = "Change Language";
         changeLangBtn.addEventListener("click", () => {
+            console.log("Change Language clicked, showing language splash.");
             homeScreen.classList.add("hidden");
             languageSplashScreen.classList.remove("hidden");
             languageDropdown.classList.add("hidden");
@@ -590,6 +592,7 @@ async function updateDropdown() {
         const getPremiumBtn = document.createElement("button");
         getPremiumBtn.textContent = "Get Premium";
         getPremiumBtn.addEventListener("click", () => {
+            console.log("Get Premium clicked, redirecting to getpremium.html");
             window.location.href = "getpremium.html";
             languageDropdown.classList.add("hidden");
         });
@@ -597,11 +600,13 @@ async function updateDropdown() {
         languageDropdown.appendChild(signInBtn);
         languageDropdown.appendChild(changeLangBtn);
         languageDropdown.appendChild(getPremiumBtn);
+        console.log("Dropdown populated with: Sign In, Change Language, Get Premium");
     } else {
         console.log("User logged in:", user.email, "ID:", user.id);
         const profileBtn = document.createElement("button");
         profileBtn.textContent = "Profile";
         profileBtn.addEventListener("click", () => {
+            console.log("Profile clicked, showing profile screen.");
             showProfile();
             languageDropdown.classList.add("hidden");
         });
@@ -609,6 +614,7 @@ async function updateDropdown() {
         const myWordsBtn = document.createElement("button");
         myWordsBtn.textContent = "My Words";
         myWordsBtn.addEventListener("click", () => {
+            console.log("My Words clicked, showing words screen.");
             homeScreen.classList.add("hidden");
             myWordsScreen.classList.remove("hidden");
             loadFavoriteWords();
@@ -618,6 +624,7 @@ async function updateDropdown() {
         const changeLangBtn = document.createElement("button");
         changeLangBtn.textContent = "Change Language";
         changeLangBtn.addEventListener("click", () => {
+            console.log("Change Language clicked, showing language splash.");
             homeScreen.classList.add("hidden");
             languageSplashScreen.classList.remove("hidden");
             languageDropdown.classList.add("hidden");
@@ -626,6 +633,7 @@ async function updateDropdown() {
         const signOutBtn = document.createElement("button");
         signOutBtn.textContent = "Sign Out";
         signOutBtn.addEventListener("click", () => {
+            console.log("Sign Out clicked, signing out.");
             signOut();
             languageDropdown.classList.add("hidden");
         });
@@ -640,29 +648,29 @@ async function updateDropdown() {
             const adminBtn = document.createElement("button");
             adminBtn.textContent = "Admin Panel";
             adminBtn.addEventListener("click", () => {
-                console.log("Admin Panel button clicked, showing admin screen.");
+                console.log("Admin Panel clicked, showing admin screen.");
                 showAdmin();
                 languageDropdown.classList.add("hidden");
             });
             languageDropdown.appendChild(adminBtn);
-        } else {
-            console.log("User is not an admin, skipping Admin Panel button.");
         }
+        console.log("Dropdown populated with:", isAdmin ? "Profile, My Words, Change Language, Sign Out, Admin Panel" : "Profile, My Words, Change Language, Sign Out");
     }
 }
 
 languageIcon.addEventListener("click", async (e) => {
     e.stopPropagation();
+    console.log("Language icon clicked, updating and toggling dropdown.");
     await updateDropdown();
     languageDropdown.classList.toggle("hidden");
 });
 
 document.addEventListener("click", (e) => {
     if (!languageMenu.contains(e.target)) {
+        console.log("Clicked outside language menu, hiding dropdown.");
         languageDropdown.classList.add("hidden");
     }
 });
-
 wordsBtn.addEventListener("click", showWordsModal);
 
 getStartedBtn.addEventListener("click", () => {
