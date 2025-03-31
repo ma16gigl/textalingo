@@ -1543,18 +1543,20 @@ async function cancelSubscription() {
             .eq('user_id', user.id)
             .single();
 
+        console.log("Raw admin query result:", adminData, "Error:", adminError);
+
         if (adminError) {
             console.error("Admin query error:", adminError.message, "Code:", adminError.code);
             if (adminError.code === 'PGRST116') {
-                console.log("No matching admin record found for ID:", user.id);
+                console.log("No admin record found for ID:", user.id);
             }
             isAdmin = false;
-        } else if (adminData && adminData.user_id === user.id) {
+        } else if (adminData) {
             isAdmin = true;
-            console.log("Admin confirmed! User ID in admins table:", adminData.user_id);
+            console.log("Admin confirmed! Found user_id:", adminData.user_id);
         } else {
             isAdmin = false;
-            console.log("Admin data returned but no match or unexpected format:", adminData);
+            console.log("Unexpected: adminData is null or empty despite no error.");
         }
     } else {
         console.log("No user logged in.");
