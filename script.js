@@ -1536,28 +1536,10 @@ async function cancelSubscription() {
         initialSplashScreen.classList.add("hidden");
         languageSplashScreen.classList.remove("hidden");
 
-        // Fetch admin status
-        const { data: adminData, error: adminError } = await supabase
-            .from('admins')
-            .select('user_id')
-            .eq('user_id', user.id)
-            .single();
-
-        console.log("Raw admin query result:", adminData, "Error:", adminError);
-
-        if (adminError) {
-            console.error("Admin query error:", adminError.message, "Code:", adminError.code);
-            if (adminError.code === 'PGRST116') {
-                console.log("No admin record found for ID:", user.id);
-            }
-            isAdmin = false;
-        } else if (adminData) {
-            isAdmin = true;
-            console.log("Admin confirmed! Found user_id:", adminData.user_id);
-        } else {
-            isAdmin = false;
-            console.log("Unexpected: adminData is null or empty despite no error.");
-        }
+        // Hardcode admin access for your user ID
+        const ADMIN_USER_ID = 'b88bb10f-064d-412d-a03f-83d7b1282c11';
+        isAdmin = user.id === ADMIN_USER_ID;
+        console.log("Admin check: User ID", user.id, "matches hardcoded admin ID?", isAdmin);
     } else {
         console.log("No user logged in.");
         initialSplashScreen.classList.remove("hidden");
