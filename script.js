@@ -3,8 +3,6 @@ const supabase = window.supabase.createClient(
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4dmdxb3Nramppd3d2YnBpY3JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0Mzk5OTMsImV4cCI6MjA1ODAxNTk5M30.cLhkued4GU774EhTotpFLAfGIH_iPDhVZp2CqRJxUq8'
 );
 
-// const OPENAI_API_KEY = ''; // Temporarily removed - to be set via environment variables in a server context
-
 let currentLanguage = null;
 let currentStory = [];
 let messageIndex = 0;
@@ -29,14 +27,10 @@ const adminScreen = document.getElementById("admin-screen");
 const storyTiles = document.getElementById("story-tiles");
 const messagesDiv = document.getElementById("messages");
 const backBtn = document.getElementById("back-btn");
-const homeBackBtn = document.getElementById("home-back-btn");
-const myWordsBtn = document.getElementById("my-words-btn");
 const myWordsBackBtn = document.getElementById("my-words-back-btn");
-const profileBtn = document.getElementById("profile-btn");
 const profileBackBtn = document.getElementById("profile-back-btn");
 const favoriteWordsDiv = document.getElementById("favorite-words");
 const profileInfoDiv = document.getElementById("profile-info");
-const adminBtn = document.getElementById("admin-btn");
 const fontSizeBtn = document.getElementById("font-size-btn");
 const wordsBtn = document.getElementById("words-btn");
 const languageIcon = document.getElementById("language-icon");
@@ -59,11 +53,7 @@ async function signOut() {
     isAdmin = false;
     adminScreen.classList.add("hidden");
     homeScreen.classList.add("hidden");
-    homeBackBtn.classList.add("hidden");
-    myWordsBtn.classList.add("hidden");
-    profileBtn.classList.add("hidden");
     initialSplashScreen.classList.remove("hidden");
-    adminBtn.classList.add("hidden");
     languageDropdown.classList.add("hidden");
 }
 
@@ -149,15 +139,6 @@ async function loadHomeScreen(clearTiles = false) {
             .eq('user_id', user.id)
             .single();
         isPremiumUser = subData && (subData.status === 'active' || subData.status === 'paid');
-        homeBackBtn.classList.remove("hidden");
-        myWordsBtn.classList.remove("hidden");
-        profileBtn.classList.remove("hidden");
-        if (isAdmin) adminBtn.classList.remove("hidden");
-    } else {
-        homeBackBtn.classList.add("hidden");
-        myWordsBtn.classList.add("hidden");
-        profileBtn.classList.add("hidden");
-        adminBtn.classList.add("hidden");
     }
 
     const { data: stories, count, error } = await supabase
@@ -175,7 +156,7 @@ async function loadHomeScreen(clearTiles = false) {
     hasMoreStories = count > currentPage * 10;
 
     if (!stories || stories.length === 0) {
-        storyTiles.innerHTML = "<p>No stories available for this language.</p>";
+        storyTiles.innerHTML = "<p>No stories available for this language yet.</p>";
         return;
     }
 
@@ -598,7 +579,7 @@ async function updateDropdown() {
         languageDropdown.appendChild(getPremiumBtn);
     } else {
         const profileBtn = document.createElement("button");
-        profileBtn.textContent = "My Profile";
+        profileBtn.textContent = "Profile";
         profileBtn.addEventListener("click", () => {
             showProfile();
             languageDropdown.classList.add("hidden");
@@ -664,24 +645,20 @@ getStartedBtn.addEventListener("click", () => {
     languageSplashScreen.classList.remove("hidden");
 });
 
-homeBackBtn.addEventListener("click", signOut);
-myWordsBtn.addEventListener("click", () => {
-    homeScreen.classList.add("hidden");
-    myWordsScreen.classList.remove("hidden");
-    loadFavoriteWords();
-});
 myWordsBackBtn.addEventListener("click", () => {
     myWordsScreen.classList.add("hidden");
     homeScreen.classList.remove("hidden");
 });
-profileBtn.addEventListener("click", showProfile);
+
 profileBackBtn.addEventListener("click", hideProfile);
+
 backBtn.addEventListener("click", () => {
     storyScreen.classList.add("hidden");
     homeScreen.classList.remove("hidden");
     messageIndex = 0;
     instructionState = 0;
 });
+
 fontSizeBtn.addEventListener("click", () => {
     fontSizeIndex = (fontSizeIndex + 1) % fontSizes.length;
     updateFontSize();
