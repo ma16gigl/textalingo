@@ -121,13 +121,14 @@ async function updateUserSubscription(sessionId) {
 
     const userId = userData.user.id;
     const response = await fetch(`/.netlify/functions/verify-session?session_id=${sessionId}`);
-    const { status, plan } = await response.json();
+    const { status, plan, subscriptionId } = await response.json();
 
     if (status === 'paid' || status === 'active') {
         await supabase.from('user_subscriptions').upsert({
             user_id: userId,
             plan: plan,
             status: status,
+            stripe_sub_id: subscriptionId,
             updated_at: new Date().toISOString()
         });
     }
@@ -148,6 +149,15 @@ async function loadHomeScreen(clearTiles = false) {
             .eq('user_id', user.id)
             .single();
         isPremiumUser = subData && (subData.status === 'active' || subData.status === 'paid');
+        homeBackBtn.classList.remove("hidden");
+        myWordsBtn.classList.remove("hidden");
+        profileBtn.classList.remove("hidden");
+        if (isAdmin) adminBtn.classList.remove("hidden");
+    } else {
+        homeBackBtn.classList.add("hidden");
+        myWordsBtn.classList.add("hidden");
+        profileBtn.classList.add("hidden");
+        adminBtn.classList.add("hidden");
     }
 
     const { data: stories, count, error } = await supabase
@@ -498,7 +508,6 @@ function showWordsModal() {
     const wordsList = document.createElement("div");
     const words = getStoryWords();
 
-    // Check Premium status
     supabase.auth.getUser().then(async ({ data: userData }) => {
         const user = userData?.user;
         let isPremiumUser = false;
@@ -788,7 +797,7 @@ async function generateStory() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` // Use environment variable
             },
             body: JSON.stringify({
                 model: "gpt-4-turbo-preview",
@@ -842,7 +851,7 @@ async function generateCoverPhoto() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` // Use environment variable
             },
             body: JSON.stringify(payload)
         });
@@ -961,7 +970,7 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
         console.log("Inserting messages into Supabase...");
         const { error: messageError } = await supabase
             .from('messages')
-            .insert.workflow(messages.map(msg => ({ story_id: storyId, text: msg.text, sender: msg.sender, delay: msg.delay })));
+            .insert(messages.map(msg => ({ story_id: storyId, text: msg.text, sender: msg.sender, delay: msg.delay })));
         if (messageError) {
             console.error("Message insertion error:", messageError);
             throw new Error(`Failed to add messages: ${messageError.message}`);
@@ -1270,6 +1279,7 @@ async function handlePaymentSuccess(sessionId) {
         window.location.href = "/"; // Redirect anyway as fallback
     }
 }
+
 async function cancelSubscription() {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
@@ -1315,6 +1325,7 @@ async function cancelSubscription() {
         alert("Failed to cancel subscription. Please try again or contact support.");
     }
 }
+
 (async function checkUserOnLoad() {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) {

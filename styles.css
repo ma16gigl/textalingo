@@ -814,6 +814,22 @@ html[lang="he"] .back-container,
     scrollbar-width: none;
 }
 
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    width: 100%;
+    clear: both;
+    background: #fff;
+}
+
+footer a {
+    color: #888;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
 /* Mobile Adjustments */
 @media (max-width: 600px) {
     .screen {
