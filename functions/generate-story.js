@@ -14,55 +14,55 @@ exports.handler = async (event, context) => {
     let prompt;
     switch (category) {
       case 'Romance':
-        prompt = `Generate a lively, realistic text message conversation in ${language} with English translations, unfolding a romance-themed story between two people in different locations across 15 messages. They could be a boyfriend/girlfriend, husband/wife, or two people flirting but not yet dating. Start with a quirky, relatable moment tied to daily life—like a small fight, a dinner plan, kid trouble, or a spontaneous idea—no mushy clichés or generic hellos. Build a plot with humor, tension, or curiosity (e.g., a spat over plans, a flirty challenge, a parenting mix-up), ending with a clever twist, reconciliation, or playful spark. Use casual, snappy texting with emojis in 3-5 messages for tone (e.g., sass, relief, flirtation). Format as: foreign sentence (English translation) received or sent, no quotes. Example: Hai preso tu le chiavi di casa? (Did you take the house keys?) sent`;
+        prompt = `Create a realistic, engaging text message conversation in ${language} with English translations, depicting a romance story between two people in different locations over 15 messages. Start with a quirky, everyday moment (e.g., a playful argument about dinner, a flirty misunderstanding, or a spontaneous romantic idea—no clichés like "I miss you"). Develop a narrative with humor, light tension, or charm, ending with a witty twist, reconciliation, or spark. Use natural, casual texting style with emojis in 3-5 messages for tone (e.g., flirtation, sass). Format each line as: foreign sentence (English translation) received or sent, no quotes. Example: Hai preso il vino per stasera? (Did you grab the wine for tonight?) sent`;
         break;
-      // ... (other cases remain unchanged: Thriller, Horror, etc.) ...
       case 'Thriller':
-        prompt = `Generate a tense text message conversation in ${language} with English translations, unfolding a thriller story between two people in different locations across 15 messages. Begin with a cryptic or urgent message that hints at danger—no small talk. Escalate with clues, fear, or a chase, ending with a shocking twist or escape. Use short, panicked texting with emojis in 3-5 messages for urgency. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Dove sei? Qualcuno mi segue (Where are you? Someone’s following me) received`;
+        prompt = `Create a gripping text message conversation in ${language} with English translations, unfolding a thriller story between two people in different locations over 15 messages. Begin with an urgent, mysterious message (e.g., a warning or odd sighting—no small talk). Build suspense with clues or danger, ending with a shocking twist or cliffhanger. Use short, tense texting with emojis in 3-5 messages for urgency. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Ti stanno cercando (They’re looking for you) received`;
         break;
       case 'Horror':
-        prompt = `Generate a chilling text message conversation in ${language} with English translations, unfolding a horror story between two people in different locations across 15 messages. Open with a creepy observation or plea that sets an eerie tone—no casual starts. Build dread with strange events or warnings, ending with a haunting reveal or silence. Use terse, fearful texting with emojis in 3-5 messages for terror. Format as: foreign sentence (English translation) received or sent, no quotes. Example: C’è un’ombra fuori dalla finestra (There’s a shadow outside my window) received`;
+        prompt = `Create a creepy text message conversation in ${language} with English translations, unfolding a horror story between two people in different locations over 15 messages. Start with an unsettling event (e.g., a noise or figure spotted—no casual intros). Escalate with eerie details, ending with a terrifying reveal or silence. Use brief, panicked texting with emojis in 3-5 messages for dread. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Qualcosa si muove al buio (Something’s moving in the dark) received`;
         break;
       case 'Action/Adventure':
-        prompt = `Generate an adrenaline-pumping text message conversation in ${language} with English translations, unfolding an action/adventure story between two people in different locations across 15 messages. Kick off with a bold move or distress call that launches the action—no slow intros. Ramp up with daring plans or risks, ending with a triumph or narrow escape. Use fast, excited texting with emojis in 3-5 messages for energy. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Ho appena rubato la chiave! (I just stole the key!) sent`;
+        prompt = `Create an exciting text message conversation in ${language} with English translations, unfolding an action/adventure story between two people in different locations over 15 messages. Kick off with a bold action (e.g., a heist or escape—no slow starts). Heighten with risks or plans, ending with a victory or close call. Use fast-paced, energetic texting with emojis in 3-5 messages for thrill. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Ho il pacco, corro! (Got the package, running!) sent`;
         break;
       case 'SciFi':
-        prompt = `Generate a mind-bending text message conversation in ${language} with English translations, unfolding a sci-fi story between two people in different locations across 15 messages. Start with a strange signal or discovery that defies reality—no mundane chit-chat. Unravel a futuristic puzzle or threat, ending with an otherworldly twist or question. Use curious, techy texting with emojis in 3-5 messages for awe or alarm. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Il drone ha captato qualcosa di strano (The drone picked up something weird) sent`;
+        prompt = `Create a thought-provoking text message conversation in ${language} with English translations, unfolding a sci-fi story between two people in different locations over 15 messages. Begin with an anomalous event (e.g., a glitch or signal—no chit-chat). Unfold a futuristic mystery, ending with a mind-bending twist or question. Use curious, tech-savvy texting with emojis in 3-5 messages for wonder. Format as: foreign sentence (English translation) received or sent, no quotes. Example: La rete sta inviando dati strani (The network’s sending weird data) sent`;
         break;
       case 'Comedy':
-        prompt = `Generate a hilarious text message conversation in ${language} with English translations, unfolding a comedy story between two people in different locations across 15 messages. Launch with an absurd mishap or witty jab that sets a goofy tone—no dull hellos. Pile on misunderstandings or chaos, ending with a laugh-out-loud punchline. Use silly, sarcastic texting with emojis in 3-5 messages for humor. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Ho chiuso il gatto in frigo per sbaglio 😂 (I locked the cat in the fridge by mistake 😂) sent`;
+        prompt = `Create a funny text message conversation in ${language} with English translations, unfolding a comedy story between two people in different locations over 15 messages. Start with a ridiculous mishap (e.g., a pet blunder or silly fight—no dull hellos). Stack up absurdities, ending with a hilarious punchline. Use playful, sarcastic texting with emojis in 3-5 messages for laughs. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Ho dato fuoco alla torta 😂 (I set the cake on fire 😂) sent`;
         break;
       case 'Business/Professional':
-        prompt = `Generate a sharp text message conversation in ${language} with English translations, unfolding a business/professional story between two people in different locations across 15 messages. Begin with a high-stakes deal or glitch that demands attention—no generic opens. Develop a power play or crisis, ending with a clever win or fallout. Use brisk, witty texting with emojis in 3-5 messages for stress or swagger. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Il cliente ha appena annullato tutto (The client just canceled everything) received`;
+        prompt = `Create a dynamic text message conversation in ${language} with English translations, unfolding a business story between two people in different locations over 15 messages. Open with a critical work issue (e.g., a deal collapsing—no generic opens). Advance with strategy or stress, ending with a smart fix or bust. Use sharp, professional texting with emojis in 3-5 messages for tone. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Il capo vuole tutto ora (The boss wants everything now) received`;
         break;
       case 'Mystery':
-        prompt = `Generate an intriguing text message conversation in ${language} with English translations, unfolding a mystery story between two people in different locations across 15 messages. Open with a puzzling question or odd event that hooks instantly—no slow starts. Deepen with cryptic hints or suspicion, ending with a revelation or new enigma. Use cautious, clever texting with emojis in 3-5 messages for intrigue. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Hai mai visto questa foto prima? (Have you ever seen this photo before?) sent`;
+        prompt = `Create an intriguing text message conversation in ${language} with English translations, unfolding a mystery story between two people in different locations over 15 messages. Start with a strange clue (e.g., a found object—no slow intros). Deepen with questions or suspicion, ending with a reveal or new puzzle. Use sly, inquisitive texting with emojis in 3-5 messages for intrigue. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Questo non è il mio telefono (This isn’t my phone) sent`;
         break;
       default:
-        prompt = `Generate an engaging text message conversation in ${language} with English translations, themed around ${category}, between two people in different locations across 15 messages. Start with a unique, attention-grabbing moment—no generic greetings. Build a story with tension or surprise, ending with a twist or resolution. Use natural, concise texting with emojis in 3-5 messages for tone. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Sei sicuro di essere solo? (Are you sure you’re alone?) sent`;
+        prompt = `Create a compelling text message conversation in ${language} with English translations, themed around ${category}, between two people in different locations over 15 messages. Begin with a vivid, specific moment (e.g., an odd event or urgent need—no generic greetings). Craft a story with momentum, ending with a surprising twist or resolution. Use authentic, concise texting with emojis in 3-5 messages for flavor. Format as: foreign sentence (English translation) received or sent, no quotes. Example: Ho trovato qualcosa di tuo (I found something of yours) received`;
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Assuming xAI API endpoint and structure (adjust based on actual docs)
+    const response = await fetch('https://api.xai.com/v1/completions', { // Replace with actual xAI endpoint
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
+        model: 'grok', // Assuming 'grok' is the model name
+        prompt: prompt,
         max_tokens: 1000,
-        temperature: 1.0,
+        temperature: 0.9, // Slightly lower for more coherent, realistic output
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      throw new Error(`xAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const storyText = data.choices[0].message.content.trim();
+    const storyText = data.choices[0].text.trim(); // Adjust based on xAI response structure
 
     return {
       statusCode: 200,
