@@ -345,7 +345,11 @@ async function loadProfile() {
             <p>Email: ${userData.user.email}</p>
             <p>User ID: ${userData.user.id}</p>
             <p>Subscription: ${subData ? `${subData.plan} (${subData.status})` : 'None'}</p>
+            ${subData && (subData.plan === 'monthly' || subData.plan === 'annual') && subData.status === 'active' ? '<button id="cancel-sub-btn">Cancel Subscription</button>' : ''}
         `;
+        if (subData && (subData.plan === 'monthly' || subData.plan === 'annual') && subData.status === 'active') {
+            document.getElementById("cancel-sub-btn").addEventListener("click", cancelSubscription);
+        }
     } else {
         profileInfoDiv.innerHTML = "<p>Error loading profile. Please sign in again.</p>";
     }
@@ -493,44 +497,58 @@ function showWordsModal() {
 
     const wordsList = document.createElement("div");
     const words = getStoryWords();
-    words.forEach(word => {
-        const wordItem = document.createElement("div");
-        wordItem.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
-        `;
-        const wordText = document.createElement("span");
-        wordText.textContent = word;
-        const heartBtn = document.createElement("button");
-        heartBtn.innerHTML = checkFavorite(word) ? "❤️" : "🤍";
-        heartBtn.style.cssText = `
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-        `;
-        heartBtn.addEventListener("click", async () => {
-            const { data: userData } = await supabase.auth.getUser();
-            if (!userData.user) {
-                alert("Saving words to practice is a Premium feature. Upgrade to Premium to unlock this!");
-                window.location.href = "getpremium.html";
-                return;
-            }
-            const translation = translations[word] || "Translation not available";
-            toggleFavorite(word, translation);
-            heartBtn.innerHTML = checkFavorite(word) ? "❤️" : "🤍";
-        });
-        wordItem.appendChild(wordText);
-        wordItem.appendChild(heartBtn);
-        wordsList.appendChild(wordItem);
-    });
 
-    wordsModal.appendChild(closeBtn);
-    wordsModal.appendChild(wordsList);
-    document.body.appendChild(wordsModal);
+    // Check Premium status
+    supabase.auth.getUser().then(async ({ data: userData }) => {
+        const user = userData?.user;
+        let isPremiumUser = false;
+
+        if (user) {
+            const { data: subData } = await supabase
+                .from('user_subscriptions')
+                .select('status')
+                .eq('user_id', user.id)
+                .single();
+            isPremiumUser = subData && (subData.status === 'active' || subData.status === 'paid');
+        }
+
+        if (!isPremiumUser) {
+            wordsList.innerHTML = "<p>Saving words is a Premium feature. <a href='getpremium.html'>Upgrade to Premium</a> to unlock this!</p>";
+        } else {
+            words.forEach(word => {
+                const wordItem = document.createElement("div");
+                wordItem.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 5px 0;
+                    border-bottom: 1px solid #eee;
+                `;
+                const wordText = document.createElement("span");
+                wordText.textContent = word;
+                const heartBtn = document.createElement("button");
+                heartBtn.innerHTML = checkFavorite(word) ? "❤️" : "🤍";
+                heartBtn.style.cssText = `
+                    background: none;
+                    border: none;
+                    font-size: 1.2rem;
+                    cursor: pointer;
+                `;
+                heartBtn.addEventListener("click", () => {
+                    const translation = translations[word] || "Translation not available";
+                    toggleFavorite(word, translation);
+                    heartBtn.innerHTML = checkFavorite(word) ? "❤️" : "🤍";
+                });
+                wordItem.appendChild(wordText);
+                wordItem.appendChild(heartBtn);
+                wordsList.appendChild(wordItem);
+            });
+        }
+
+        wordsModal.appendChild(closeBtn);
+        wordsModal.appendChild(wordsList);
+        document.body.appendChild(wordsModal);
+    });
 }
 
 async function updateDropdown() {
@@ -1252,7 +1270,51 @@ async function handlePaymentSuccess(sessionId) {
         window.location.href = "/"; // Redirect anyway as fallback
     }
 }
+async function cancelSubscription() {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+        alert("Please sign in to manage your subscription.");
+        return;
+    }
 
+    const userId = userData.user.id;
+    const { data: subData } = await supabase
+        .from('user_subscriptions')
+        .select('plan, status')
+        .eq('user_id', userId)
+        .single();
+
+    if (!subData || subData.status !== 'active') {
+        alert("No active subscription found to cancel.");
+        return;
+    }
+
+    if (subData.plan === 'lifetime') {
+        alert("Lifetime plans cannot be canceled as they are one-time purchases.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/.netlify/functions/cancel-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Cancellation failed: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log("Cancellation result:", result);
+        alert("Your subscription has been canceled. You’ll retain access until the end of your current billing period.");
+        loadProfile(); // Refresh profile display
+    } catch (error) {
+        console.error("Error canceling subscription:", error);
+        alert("Failed to cancel subscription. Please try again or contact support.");
+    }
+}
 (async function checkUserOnLoad() {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) {
