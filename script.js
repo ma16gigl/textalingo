@@ -343,24 +343,45 @@ async function showCategoryStories(category) {
 }
 
 async function loadProfile() {
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData.user) {
-        const { data: subData } = await supabase
-            .from('user_subscriptions')
-            .select('plan, status')
-            .eq('user_id', userData.user.id)
-            .single();
-        profileInfoDiv.innerHTML = `
-            <p>Email: ${userData.user.email}</p>
-            <p>User ID: ${userData.user.id}</p>
-            <p>Subscription: ${subData ? `${subData.plan} (${subData.status})` : 'None'}</p>
-            ${subData && (subData.plan === 'monthly' || subData.plan === 'annual') && subData.status === 'active' ? '<button id="cancel-sub-btn">Cancel Subscription</button>' : ''}
-        `;
-        if (subData && (subData.plan === 'monthly' || subData.plan === 'annual') && subData.status === 'active') {
-            document.getElementById("cancel-sub-btn").addEventListener("click", cancelSubscription);
-        }
-    } else {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+        console.error("Error loading user for profile:", userError?.message);
         profileInfoDiv.innerHTML = "<p>Error loading profile. Please sign in again.</p>";
+        return;
+    }
+
+    const user = userData.user;
+    console.log("Loading profile for user:", user.email, "ID:", user.id);
+
+    const { data: subData, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select('plan, status')
+        .eq('user_id', user.id)
+        .single();
+
+    if (subError && subError.code !== 'PGRST116') { // PGRST116 means no row, which is okay
+        console.error("Error fetching subscription:", subError.message, "Code:", subError.code);
+        profileInfoDiv.innerHTML = `
+            <p>Email: ${user.email}</p>
+            <p>User ID: ${user.id}</p>
+            <p>Subscription: Error loading subscription data (${subError.message})</p>
+        `;
+    } else {
+        const hasActiveSubscription = subData && (subData.plan === 'monthly' || subData.plan === 'annual') && subData.status === 'active';
+        profileInfoDiv.innerHTML = `
+            <p>Email: ${user.email}</p>
+            <p>User ID: ${user.id}</p>
+            <p>Subscription: ${subData ? `${subData.plan} (${subData.status})` : 'None'}</p>
+            ${hasActiveSubscription ? '<button id="cancel-sub-btn">Cancel Subscription</button>' : ''}
+        `;
+        
+        const cancelBtn = document.getElementById("cancel-sub-btn");
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", cancelSubscription);
+            console.log("Cancel Subscription button added and listener attached.");
+        } else {
+            console.log("No active subscription, Cancel button not added.");
+        }
     }
 }
 
@@ -561,7 +582,7 @@ function showWordsModal() {
 
 async function updateDropdown() {
     console.log("Starting updateDropdown...");
-    languageDropdown.innerHTML = ""; // Clear existing content
+    languageDropdown.innerHTML = "";
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError) {
@@ -603,6 +624,7 @@ async function updateDropdown() {
         console.log("Guest dropdown options added: Sign In, Change Language, Get Premium");
     } else {
         console.log("User logged in - Email:", user.email, "ID:", user.id);
+
         const profileBtn = document.createElement("button");
         profileBtn.textContent = "Profile";
         profileBtn.addEventListener("click", () => {
@@ -649,7 +671,7 @@ async function updateDropdown() {
             const adminBtn = document.createElement("button");
             adminBtn.textContent = "Admin Panel";
             adminBtn.addEventListener("click", () => {
-                console.log("Admin Panel clicked, calling showAdmin.");
+                console.log("Admin Panel clicked.");
                 showAdmin();
                 languageDropdown.classList.add("hidden");
             });
@@ -1539,7 +1561,7 @@ async function cancelSubscription() {
         // Hardcode admin access for your user ID
         const ADMIN_USER_ID = 'b88bb10f-064d-412d-a03f-83d7b1282c11';
         isAdmin = user.id === ADMIN_USER_ID;
-        console.log("Admin check: User ID", user.id, "matches hardcoded admin ID?", isAdmin);
+        console.log("Hardcoded admin check - User ID:", user.id, "Matches", ADMIN_USER_ID, "?", isAdmin);
     } else {
         console.log("No user logged in.");
         initialSplashScreen.classList.remove("hidden");
