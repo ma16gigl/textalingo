@@ -140,12 +140,12 @@ async function loadHomeScreen(clearTiles = false) {
             .from('user_subscriptions')
             .select('status')
             .eq('user_id', user.id)
-            .single();
+            .limit(1); // Use limit(1) instead of single() to avoid 406
         if (subError) {
             console.error("Error fetching subscription:", subError.message);
-            isPremiumUser = false; // Default to non-premium if no subscription found
-        } else {
-            isPremiumUser = subData && (subData.status === 'active' || subData.status === 'paid');
+            isPremiumUser = false;
+        } else if (subData && subData.length > 0) {
+            isPremiumUser = subData[0].status === 'active' || subData[0].status === 'paid';
         }
     }
 
