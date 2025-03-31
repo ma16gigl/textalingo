@@ -3,10 +3,10 @@ const fetch = require('node-fetch');
 exports.handler = async (event, context) => {
   try {
     const { language, category } = JSON.parse(event.body);
-
     if (!language || !category) {
       return {
         statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ error: 'Language and category are required' }),
       };
     }
@@ -17,7 +17,7 @@ exports.handler = async (event, context) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, // Access the key from Netlify env vars
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: 'gpt-4-turbo-preview',
@@ -37,12 +37,14 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ story: storyText }),
     };
   } catch (error) {
     console.error('Error generating story:', error);
     return {
       statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: error.message }),
     };
   }

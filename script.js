@@ -128,17 +128,25 @@ async function loadHomeScreen(clearTiles = false) {
     if (clearTiles) storyTiles.innerHTML = "";
     languageIcon.src = `/Assets/${currentLanguage}.png`;
     
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+        console.error("Error fetching user:", userError.message);
+    }
     const user = userData?.user;
     let isPremiumUser = false;
 
     if (user) {
-        const { data: subData } = await supabase
+        const { data: subData, error: subError } = await supabase
             .from('user_subscriptions')
             .select('status')
             .eq('user_id', user.id)
             .single();
-        isPremiumUser = subData && (subData.status === 'active' || subData.status === 'paid');
+        if (subError) {
+            console.error("Error fetching subscription:", subError.message);
+            isPremiumUser = false; // Default to non-premium if no subscription found
+        } else {
+            isPremiumUser = subData && (subData.status === 'active' || subData.status === 'paid');
+        }
     }
 
     const { data: stories, count, error } = await supabase
@@ -244,7 +252,6 @@ async function loadHomeScreen(clearTiles = false) {
 
     await updateDropdown();
 }
-
 async function showCategoryStories(category) {
     const categoryScreen = document.createElement("div");
     categoryScreen.id = "category-screen";
