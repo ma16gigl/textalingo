@@ -11,7 +11,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const prompt = `Generate a highly engaging, realistic text message conversation in ${language} with English translations, themed around ${category}. The dialogue is between two people in different locations (e.g., one at home, one away), unfolding in real-time with 15 messages. Each message should feel natural, concise, and conversational, like actual texts—use casual phrasing, emotions, interruptions, or surprises to keep it dynamic. Include a specific, unique context that shapes the exchange (avoid generic settings), but don’t mention the context explicitly in the messages. Occasionally (in about 3-5 messages), add emojis where they naturally fit to reflect tone or emotion, as people do in real texting. Format each line as: foreign sentence (English translation) received or sent, without quotes around the line. Avoid dull or predictable exchanges; make the story gripping and believable. Example: Ciao sei in ritardo 😅 (Hey you’re late 😅) sent`;
+    const prompt = `Generate a gripping, realistic text message conversation in ${language} with English translations, themed around ${category}. The dialogue is between two people in different locations, unfolding in real-time across 15 messages. Craft a vivid, evolving story with a clear arc—start with a relatable hook, build tension or mystery through their exchange, and end with a satisfying twist, resolution, or cliffhanger. Make the characters distinct and emotionally invested, using casual, concise phrasing that feels like real texting. Add emojis in 3-5 messages where they amplify tone or stakes (e.g., excitement, worry, relief). Base the story on a unique, specific situation that shapes their dialogue (don’t state it explicitly in the messages). Format each line as: foreign sentence (English translation) received or sent, without quotes. Avoid vague or boring exchanges—every message should push the plot forward with wit, drama, or heart. Example: Ciao hai visto il mio messaggio ieri? (Hey, did you see my message yesterday?) sent`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -23,7 +23,7 @@ exports.handler = async (event, context) => {
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 1000,
-        temperature: 0.9,
+        temperature: 1.0, // Increased for more creative flair
       }),
     });
 
