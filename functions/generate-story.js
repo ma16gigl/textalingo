@@ -1,4 +1,3 @@
-// Force redeploy to ensure latest version - 2025-03-30
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
@@ -12,7 +11,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const prompt = `Generate a completely unique, highly creative, and engaging ${category} themed text message story in ${language} with English translations. The story must be a realistic text messaging dialogue between two people who are not in the same location (e.g., one is at home, the other is traveling), set in a specific and imaginative context (e.g., a bustling market, a mysterious forest, a futuristic city). It should consist of at least 30 messages. Format each line as: foreign sentence (English translation) received or sent, with no quotation marks around the entire line (since people don’t use quotes when texting). Do not include numbers or character names before each sentence. Use spaces or other punctuation within the foreign sentence and English translation, but do not use parentheses within them; reserve parentheses only for separating the English translation. Avoid bland or generic exchanges; make the dialogue dynamic, emotional, and full of surprises to captivate the reader. Example: Ciao ti ho visto al mercato oggi ma eri lontano (Hello I saw you at the market today but you were far away) sent`;
+    const prompt = `Generate a unique, creative, and engaging ${category} themed text message story in ${language} with English translations. The story should be a realistic text messaging dialogue between two people not in the same location (e.g., one at home, the other traveling), set in an imaginative context (e.g., a market, a forest). It should have 15 messages. Format each line as: foreign sentence (English translation) received or sent, without quotes around the line. Avoid bland exchanges; make it dynamic and emotional. Example: Ciao ti ho visto al mercato oggi (I saw you at the market today) sent`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -21,9 +20,9 @@ exports.handler = async (event, context) => {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
+        model: 'gpt-3.5-turbo', // Faster than gpt-4-turbo-preview
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 3000,
+        max_tokens: 1000, // Reduced from 3000
         temperature: 0.9,
       }),
     });
