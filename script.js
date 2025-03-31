@@ -1517,34 +1517,45 @@ async function cancelSubscription() {
         console.error("Error checking user on load:", userError.message);
         initialSplashScreen.classList.remove("hidden");
         languageSplashScreen.classList.add("hidden");
+        isAdmin = false; // Default to false on error
+        await updateDropdown();
         return;
     }
 
     const user = userData?.user;
 
     if (user) {
-        console.log("User detected on load:", user.email, "ID:", user.id);
+        console.log("User detected on load - Email:", user.email, "ID:", user.id);
         initialSplashScreen.classList.add("hidden");
         languageSplashScreen.classList.remove("hidden");
+
+        // Check if user is an admin
         const { data: adminData, error: adminError } = await supabase
             .from('admins')
             .select('user_id')
             .eq('user_id', user.id)
             .single();
+
         if (adminError) {
-            console.error("Admin check error:", adminError.message);
+            console.error("Admin check error:", adminError.message, "Code:", adminError.code);
             if (adminError.code === 'PGRST116') {
-                console.log("No admin record found for this user.");
+                console.log("No admin record found for user ID:", user.id);
             }
             isAdmin = false;
+        } else if (adminData) {
+            isAdmin = true;
+            console.log("Admin record found! User is an admin. User ID:", adminData.user_id);
         } else {
-            isAdmin = !!adminData;
-            console.log("Admin check result:", isAdmin ? "User is an admin" : "User is not an admin");
+            isAdmin = false;
+            console.log("No admin data returned, user is not an admin.");
         }
     } else {
         console.log("No user logged in on load.");
         initialSplashScreen.classList.remove("hidden");
         languageSplashScreen.classList.add("hidden");
+        isAdmin = false;
     }
+
+    console.log("Final isAdmin value:", isAdmin);
     await updateDropdown();
 })();
