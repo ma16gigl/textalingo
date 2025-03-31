@@ -11,7 +11,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const prompt = `Generate a unique, creative, and engaging ${category} themed text message story in ${language} with English translations. The story should be a realistic text messaging dialogue between two people not in the same location (e.g., one at home, the other traveling), set in an imaginative context (e.g., a market, a forest). It should have 15 messages. Format each line as: foreign sentence (English translation) received or sent, without quotes around the line. Avoid bland exchanges; make it dynamic and emotional. Example: Ciao ti ho visto al mercato oggi (I saw you at the market today) sent`;
+    const prompt = `Generate a highly engaging, realistic text message conversation in ${language} with English translations, themed around ${category}. The dialogue is between two people in different locations (e.g., one at home, one away), unfolding in real-time with 15 messages. Each message should feel natural, concise, and conversational, like actual texts—use casual phrasing, emotions, interruptions, or surprises to keep it dynamic. Include a specific, unique context that shapes the exchange (avoid generic settings), but don’t mention the context explicitly in the messages. Occasionally (in about 3-5 messages), add emojis where they naturally fit to reflect tone or emotion, as people do in real texting. Format each line as: foreign sentence (English translation) received or sent, without quotes around the line. Avoid dull or predictable exchanges; make the story gripping and believable. Example: Ciao sei in ritardo 😅 (Hey you’re late 😅) sent`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -20,9 +20,9 @@ exports.handler = async (event, context) => {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo', // Faster than gpt-4-turbo-preview
+        model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1000, // Reduced from 3000
+        max_tokens: 1000,
         temperature: 0.9,
       }),
     });
