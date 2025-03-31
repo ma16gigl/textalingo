@@ -565,11 +565,13 @@ async function updateDropdown() {
 
     if (userError) {
         console.error("Error fetching user data:", userError.message);
+        return;
     }
 
     const user = userData?.user;
 
     if (!user) {
+        console.log("No user logged in, showing basic dropdown options.");
         const signInBtn = document.createElement("button");
         signInBtn.textContent = "Sign In";
         signInBtn.addEventListener("click", () => {
@@ -596,6 +598,7 @@ async function updateDropdown() {
         languageDropdown.appendChild(changeLangBtn);
         languageDropdown.appendChild(getPremiumBtn);
     } else {
+        console.log("User logged in:", user.email, "ID:", user.id);
         const profileBtn = document.createElement("button");
         profileBtn.textContent = "Profile";
         profileBtn.addEventListener("click", () => {
@@ -632,14 +635,18 @@ async function updateDropdown() {
         languageDropdown.appendChild(changeLangBtn);
         languageDropdown.appendChild(signOutBtn);
 
+        console.log("isAdmin flag:", isAdmin);
         if (isAdmin) {
             const adminBtn = document.createElement("button");
             adminBtn.textContent = "Admin Panel";
             adminBtn.addEventListener("click", () => {
+                console.log("Admin Panel button clicked, showing admin screen.");
                 showAdmin();
                 languageDropdown.classList.add("hidden");
             });
             languageDropdown.appendChild(adminBtn);
+        } else {
+            console.log("User is not an admin, skipping Admin Panel button.");
         }
     }
 }
@@ -1500,18 +1507,34 @@ async function cancelSubscription() {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) {
         console.error("Error checking user on load:", userError.message);
+        initialSplashScreen.classList.remove("hidden");
+        languageSplashScreen.classList.add("hidden");
+        return;
     }
 
     const user = userData?.user;
 
     if (user) {
-        // Don’t call loadHomeScreen immediately; wait for language selection
+        console.log("User detected on load:", user.email, "ID:", user.id);
         initialSplashScreen.classList.add("hidden");
         languageSplashScreen.classList.remove("hidden");
-        const { data: adminData, error: adminError } = await supabase.from('admins').select('user_id').eq('user_id', user.id).single();
-        if (adminError) console.error("Admin check error:", adminError.message);
-        isAdmin = !!adminData;
+        const { data: adminData, error: adminError } = await supabase
+            .from('admins')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .single();
+        if (adminError) {
+            console.error("Admin check error:", adminError.message);
+            if (adminError.code === 'PGRST116') {
+                console.log("No admin record found for this user.");
+            }
+            isAdmin = false;
+        } else {
+            isAdmin = !!adminData;
+            console.log("Admin check result:", isAdmin ? "User is an admin" : "User is not an admin");
+        }
     } else {
+        console.log("No user logged in on load.");
         initialSplashScreen.classList.remove("hidden");
         languageSplashScreen.classList.add("hidden");
     }
