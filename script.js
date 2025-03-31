@@ -625,6 +625,11 @@ async function updateDropdown() {
     } else {
         console.log("User logged in - Email:", user.email, "ID:", user.id);
 
+        // Hardcode admin access for your user ID
+        const ADMIN_USER_ID = 'b88bb10f-064d-412d-a03f-83d7b1282c11';
+        isAdmin = user.id === ADMIN_USER_ID;
+        console.log("Hardcoded admin check - User ID:", user.id, "Matches", ADMIN_USER_ID, "?", isAdmin);
+
         const profileBtn = document.createElement("button");
         profileBtn.textContent = "Profile";
         profileBtn.addEventListener("click", () => {
@@ -1538,38 +1543,3 @@ async function cancelSubscription() {
     }
 }
 
-(async function checkUserOnLoad() {
-    console.log("Starting checkUserOnLoad...");
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-        console.error("Error fetching user:", userError.message);
-        initialSplashScreen.classList.remove("hidden");
-        languageSplashScreen.classList.add("hidden");
-        isAdmin = false;
-        await updateDropdown();
-        return;
-    }
-
-    const user = userData?.user;
-
-    if (user) {
-        console.log("User found - Email:", user.email, "ID:", user.id);
-        initialSplashScreen.classList.add("hidden");
-        languageSplashScreen.classList.remove("hidden");
-
-        // Hardcode admin access for your user ID
-        const ADMIN_USER_ID = 'b88bb10f-064d-412d-a03f-83d7b1282c11';
-        isAdmin = user.id === ADMIN_USER_ID;
-        console.log("Hardcoded admin check - User ID:", user.id, "Matches", ADMIN_USER_ID, "?", isAdmin);
-    } else {
-        console.log("No user logged in.");
-        initialSplashScreen.classList.remove("hidden");
-        languageSplashScreen.classList.add("hidden");
-        isAdmin = false;
-    }
-
-    console.log("isAdmin set to:", isAdmin);
-    await updateDropdown();
-    console.log("checkUserOnLoad completed.");
-})();
