@@ -16,6 +16,8 @@ let adminMessageCount = 1;
 let editMessageCount = 0;
 let currentStoryId = null;
 let instructionState = 0;
+let currentSeriesTitle = null; // Tracks the series being generated
+let currentEpisodeNumber = 0; // Tracks the episode count
 
 const initialSplashScreen = document.getElementById("initial-splash");
 const languageSplashScreen = document.getElementById("language-splash");
@@ -176,7 +178,7 @@ async function loadHomeScreen(clearTiles = false) {
         if (story.popular_now) categories["Popular Now"].push(story);
     });
 
-    const categoryOrder = ["Popular Now", "Romance", "Thriller", "Horror", "Action/Adventure", "SciFi", "Comedy", "Business/Professional", "Mystery", "Other"];
+    const categoryOrder = ["Popular Now", "Romance", "Thriller", "Horror", "Action/Adventure", "SciFi", "Comedy", "Business/Professional", "Mystery", "Series", "Other"];
     const orderedCategories = {};
     categoryOrder.forEach(cat => {
         if (categories[cat]) orderedCategories[cat] = categories[cat];
@@ -209,6 +211,7 @@ async function loadHomeScreen(clearTiles = false) {
             tile.classList.add("story-tile");
             if (story.is_new) tile.classList.add("new");
             if (story.premium) tile.classList.add("premium");
+            if (story.category === "Series") tile.classList.add("series"); // Add series class
             tile.innerHTML = `
                 <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
                 <div class="title">${story.title}</div>
@@ -252,6 +255,7 @@ async function loadHomeScreen(clearTiles = false) {
 
     await updateDropdown();
 }
+
 async function showCategoryStories(category) {
     const categoryScreen = document.createElement("div");
     categoryScreen.id = "category-screen";
@@ -307,6 +311,7 @@ async function showCategoryStories(category) {
         tile.classList.add("story-tile");
         if (story.is_new) tile.classList.add("new");
         if (story.premium) tile.classList.add("premium");
+        if (story.category === "Series") tile.classList.add("series");
         tile.innerHTML = `
             <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
             <div class="title">${story.title}</div>
@@ -774,6 +779,7 @@ document.getElementById("bulk-translation-form").addEventListener("submit", asyn
 async function generateStory() {
     const language = document.getElementById("bulk-story-language").value;
     const category = document.getElementById("bulk-story-category").value || "General";
+    const title = document.getElementById("bulk-story-title").value.trim();
 
     try {
         const response = await fetch('/.netlify/functions/generate-story', {
@@ -781,7 +787,7 @@ async function generateStory() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ language, category }),
+            body: JSON.stringify({ language, category, title, episode: 1 }), // Pass episode 1 for initial story
         });
 
         if (!response.ok) {
@@ -797,9 +803,59 @@ async function generateStory() {
         const storyText = data.story;
         document.getElementById("bulk-story-text").value = storyText;
         alert("Story generated successfully!");
+
+        // If Series, set state and enable next episode button
+        if (category === "Series") {
+            currentSeriesTitle = title;
+            currentEpisodeNumber = 1;
+            document.getElementById("generate-next-episode-btn").disabled = false;
+        }
     } catch (error) {
         console.error("Error generating story:", error);
         alert("Failed to generate story: " + error.message);
+    }
+}
+
+async function generateNextEpisode() {
+    if (!currentSeriesTitle) {
+        alert("Please generate the first episode of a series before continuing.");
+        return;
+    }
+
+    const language = document.getElementById("bulk-story-language").value;
+    const title = currentSeriesTitle;
+    currentEpisodeNumber++;
+
+    try {
+        const response = await fetch('/.netlify/functions/generate-story', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                language, 
+                category: "Series", 
+                title, 
+                episode: currentEpisodeNumber 
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const storyText = data.story;
+        document.getElementById("bulk-story-text").value = storyText;
+        alert(`Episode ${currentEpisodeNumber} of "${title}" generated successfully!`);
+    } catch (error) {
+        console.error("Error generating next episode:", error);
+        alert("Failed to generate next episode: " + error.message);
     }
 }
 

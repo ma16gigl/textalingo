@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
   try {
-    const { language, category } = JSON.parse(event.body);
+    const { language, category, title, episode = 1 } = JSON.parse(event.body);
     if (!language || !category) {
       return {
         statusCode: 400,
@@ -11,9 +11,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const prompt = category === 'Romance'
-      ? `Create a realistic, engaging text message conversation in ${language} with English translations, depicting a romance story between two people in different locations over 15 messages. Start with a quirky, everyday moment (e.g., a playful argument about dinner, a flirty misunderstanding—no clichés like "I miss you"). Develop a narrative with humor, light tension, or charm, ending with a witty twist or spark. Use natural, casual texting style with emojis in 3-5 messages. Format each line as: foreign sentence (English translation) received or sent, no quotes. Example: Hai preso il vino per stasera? (Did you grab the wine for tonight?) sent`
-      : `Create a compelling text message conversation in ${language} with English translations, themed around ${category}, between two people in different locations over 15 messages. Begin with a vivid, specific moment (e.g., an odd event—no generic greetings). Craft a story with momentum, ending with a twist or resolution. Use authentic, concise texting with emojis in 3-5 messages. Format as: foreign sentence (English translation) received or sent, no quotes.`;
+    let prompt;
+    if (category === 'Series') {
+      prompt = episode === 1
+        ? `Start a riveting text message conversation series in ${language} with English translations, titled "${title}", between two people in different locations. This is Episode 1 of a planned 15+ episode arc. Begin with a gripping, unique hook (e.g., a mysterious message, a sudden crisis—no generic intros) that sets up an ongoing, suspenseful narrative with rich characters and a world that can evolve over many episodes. Deliver 15 messages for this episode, using natural, casual texting with emojis in 3-5 messages for tone. Format each line as: foreign sentence (English translation) received or sent, no quotes. Example: Hai visto chi era alla porta? (Did you see who was at the door?) received`
+        : `Continue the text message conversation series in ${language} with English translations, titled "${title}", between two people in different locations. This is Episode ${episode} of a 15+ episode arc. Build on the previous episode’s events, escalating the ongoing narrative with new twists, character development, or stakes (no recap, assume continuity). Deliver 15 messages for this episode, using natural, casual texting with emojis in 3-5 messages for tone. Format each line as: foreign sentence (English translation) received or sent, no quotes.`;
+    } else {
+      prompt = category === 'Romance'
+        ? `Create a realistic, engaging text message conversation in ${language} with English translations, depicting a romance story between two people in different locations over 15 messages. Start with a quirky, everyday moment (e.g., a playful argument about dinner—no clichés like "I miss you"). Develop a narrative with humor, light tension, or charm, ending with a witty twist or spark. Use natural, casual texting style with emojis in 3-5 messages. Format each line as: foreign sentence (English translation) received or sent, no quotes.`
+        : `Create a compelling text message conversation in ${language} with English translations, themed around ${category}, between two people in different locations over 15 messages. Begin with a vivid, specific moment (e.g., an odd event—no generic greetings). Craft a story with momentum, ending with a twist or resolution. Use authentic, concise texting with emojis in 3-5 messages. Format as: foreign sentence (English translation) received or sent, no quotes.`;
+    }
 
     console.log('Sending request to xAI API with prompt:', prompt);
 
@@ -24,7 +31,7 @@ exports.handler = async (event, context) => {
         'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'grok-2-1212', // Confirmed latest model
+        model: 'grok-2-1212',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 1000,
         temperature: 0.9,
