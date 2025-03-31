@@ -1312,14 +1312,15 @@ async function cancelSubscription() {
     const user = userData?.user;
 
     if (user) {
-        homeScreen.classList.remove("hidden");
+        // Don’t call loadHomeScreen immediately; wait for language selection
+        initialSplashScreen.classList.add("hidden");
+        languageSplashScreen.classList.remove("hidden");
         const { data: adminData, error: adminError } = await supabase.from('admins').select('user_id').eq('user_id', user.id).single();
         if (adminError) console.error("Admin check error:", adminError.message);
         isAdmin = !!adminData;
-        await loadHomeScreen(true);
     } else {
         initialSplashScreen.classList.remove("hidden");
         languageSplashScreen.classList.add("hidden");
-        await updateDropdown();
     }
+    await updateDropdown();
 })();
