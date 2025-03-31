@@ -560,22 +560,22 @@ function showWordsModal() {
 }
 
 async function updateDropdown() {
-    languageDropdown.innerHTML = "";
+    console.log("Starting updateDropdown...");
+    languageDropdown.innerHTML = ""; // Clear existing content
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError) {
-        console.error("Error fetching user data:", userError.message);
-        // Proceed as if no user is logged in
+        console.error("Error fetching user in updateDropdown:", userError.message);
     }
 
     const user = userData?.user;
 
     if (!user) {
-        console.log("No user logged in, populating dropdown with guest options.");
+        console.log("No user logged in, adding guest options.");
         const signInBtn = document.createElement("button");
         signInBtn.textContent = "Sign In";
         signInBtn.addEventListener("click", () => {
-            console.log("Sign In clicked, redirecting to signin.html");
+            console.log("Sign In clicked.");
             window.location.href = "signin.html";
             languageDropdown.classList.add("hidden");
         });
@@ -583,7 +583,7 @@ async function updateDropdown() {
         const changeLangBtn = document.createElement("button");
         changeLangBtn.textContent = "Change Language";
         changeLangBtn.addEventListener("click", () => {
-            console.log("Change Language clicked, showing language splash.");
+            console.log("Change Language clicked.");
             homeScreen.classList.add("hidden");
             languageSplashScreen.classList.remove("hidden");
             languageDropdown.classList.add("hidden");
@@ -592,7 +592,7 @@ async function updateDropdown() {
         const getPremiumBtn = document.createElement("button");
         getPremiumBtn.textContent = "Get Premium";
         getPremiumBtn.addEventListener("click", () => {
-            console.log("Get Premium clicked, redirecting to getpremium.html");
+            console.log("Get Premium clicked.");
             window.location.href = "getpremium.html";
             languageDropdown.classList.add("hidden");
         });
@@ -600,13 +600,13 @@ async function updateDropdown() {
         languageDropdown.appendChild(signInBtn);
         languageDropdown.appendChild(changeLangBtn);
         languageDropdown.appendChild(getPremiumBtn);
-        console.log("Dropdown populated with: Sign In, Change Language, Get Premium");
+        console.log("Guest dropdown options added: Sign In, Change Language, Get Premium");
     } else {
-        console.log("User logged in:", user.email, "ID:", user.id);
+        console.log("User logged in - Email:", user.email, "ID:", user.id);
         const profileBtn = document.createElement("button");
         profileBtn.textContent = "Profile";
         profileBtn.addEventListener("click", () => {
-            console.log("Profile clicked, showing profile screen.");
+            console.log("Profile clicked.");
             showProfile();
             languageDropdown.classList.add("hidden");
         });
@@ -614,7 +614,7 @@ async function updateDropdown() {
         const myWordsBtn = document.createElement("button");
         myWordsBtn.textContent = "My Words";
         myWordsBtn.addEventListener("click", () => {
-            console.log("My Words clicked, showing words screen.");
+            console.log("My Words clicked.");
             homeScreen.classList.add("hidden");
             myWordsScreen.classList.remove("hidden");
             loadFavoriteWords();
@@ -624,7 +624,7 @@ async function updateDropdown() {
         const changeLangBtn = document.createElement("button");
         changeLangBtn.textContent = "Change Language";
         changeLangBtn.addEventListener("click", () => {
-            console.log("Change Language clicked, showing language splash.");
+            console.log("Change Language clicked.");
             homeScreen.classList.add("hidden");
             languageSplashScreen.classList.remove("hidden");
             languageDropdown.classList.add("hidden");
@@ -633,7 +633,7 @@ async function updateDropdown() {
         const signOutBtn = document.createElement("button");
         signOutBtn.textContent = "Sign Out";
         signOutBtn.addEventListener("click", () => {
-            console.log("Sign Out clicked, signing out.");
+            console.log("Sign Out clicked.");
             signOut();
             languageDropdown.classList.add("hidden");
         });
@@ -642,20 +642,25 @@ async function updateDropdown() {
         languageDropdown.appendChild(myWordsBtn);
         languageDropdown.appendChild(changeLangBtn);
         languageDropdown.appendChild(signOutBtn);
+        console.log("Basic user options added: Profile, My Words, Change Language, Sign Out");
 
-        console.log("isAdmin flag:", isAdmin);
+        console.log("Checking isAdmin:", isAdmin);
         if (isAdmin) {
             const adminBtn = document.createElement("button");
             adminBtn.textContent = "Admin Panel";
             adminBtn.addEventListener("click", () => {
-                console.log("Admin Panel clicked, showing admin screen.");
+                console.log("Admin Panel clicked, calling showAdmin.");
                 showAdmin();
                 languageDropdown.classList.add("hidden");
             });
             languageDropdown.appendChild(adminBtn);
+            console.log("Admin Panel button added to dropdown.");
+        } else {
+            console.log("isAdmin is false, skipping Admin Panel button.");
         }
-        console.log("Dropdown populated with:", isAdmin ? "Profile, My Words, Change Language, Sign Out, Admin Panel" : "Profile, My Words, Change Language, Sign Out");
     }
+
+    console.log("updateDropdown completed. Dropdown HTML:", languageDropdown.innerHTML);
 }
 
 languageIcon.addEventListener("click", async (e) => {
@@ -1512,12 +1517,14 @@ async function cancelSubscription() {
 }
 
 (async function checkUserOnLoad() {
+    console.log("Starting checkUserOnLoad...");
     const { data: userData, error: userError } = await supabase.auth.getUser();
+    
     if (userError) {
-        console.error("Error checking user on load:", userError.message);
+        console.error("Error fetching user:", userError.message);
         initialSplashScreen.classList.remove("hidden");
         languageSplashScreen.classList.add("hidden");
-        isAdmin = false; // Default to false on error
+        isAdmin = false;
         await updateDropdown();
         return;
     }
@@ -1525,11 +1532,11 @@ async function cancelSubscription() {
     const user = userData?.user;
 
     if (user) {
-        console.log("User detected on load - Email:", user.email, "ID:", user.id);
+        console.log("User found - Email:", user.email, "ID:", user.id);
         initialSplashScreen.classList.add("hidden");
         languageSplashScreen.classList.remove("hidden");
 
-        // Check if user is an admin
+        // Fetch admin status
         const { data: adminData, error: adminError } = await supabase
             .from('admins')
             .select('user_id')
@@ -1537,25 +1544,26 @@ async function cancelSubscription() {
             .single();
 
         if (adminError) {
-            console.error("Admin check error:", adminError.message, "Code:", adminError.code);
+            console.error("Admin query error:", adminError.message, "Code:", adminError.code);
             if (adminError.code === 'PGRST116') {
-                console.log("No admin record found for user ID:", user.id);
+                console.log("No matching admin record found for ID:", user.id);
             }
             isAdmin = false;
-        } else if (adminData) {
+        } else if (adminData && adminData.user_id === user.id) {
             isAdmin = true;
-            console.log("Admin record found! User is an admin. User ID:", adminData.user_id);
+            console.log("Admin confirmed! User ID in admins table:", adminData.user_id);
         } else {
             isAdmin = false;
-            console.log("No admin data returned, user is not an admin.");
+            console.log("Admin data returned but no match or unexpected format:", adminData);
         }
     } else {
-        console.log("No user logged in on load.");
+        console.log("No user logged in.");
         initialSplashScreen.classList.remove("hidden");
         languageSplashScreen.classList.add("hidden");
         isAdmin = false;
     }
 
-    console.log("Final isAdmin value:", isAdmin);
+    console.log("isAdmin set to:", isAdmin);
     await updateDropdown();
+    console.log("checkUserOnLoad completed.");
 })();
