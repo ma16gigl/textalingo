@@ -1264,9 +1264,14 @@ async function loadStoryList() {
     for (const [seriesTitle, episodes] of Object.entries(seriesGroups)) {
         const groupDiv = document.createElement("div");
         groupDiv.classList.add("series-group");
-        groupDiv.innerHTML = `
-            <button class="series-toggle" onclick="showSeriesEpisodes('${seriesTitle}', '${JSON.stringify(episodes)}')">${seriesTitle} (${episodes.length} Episodes)</button>
-        `;
+        const toggleBtn = document.createElement("button");
+        toggleBtn.classList.add("series-toggle");
+        toggleBtn.textContent = `${seriesTitle} (${episodes.length} Episodes)`;
+        toggleBtn.addEventListener("click", () => {
+            console.log("Series toggle clicked for:", seriesTitle);
+            showSeriesEpisodes(seriesTitle, episodes);
+        });
+        groupDiv.appendChild(toggleBtn);
         seriesListDiv.appendChild(groupDiv);
     }
 
@@ -1474,40 +1479,61 @@ function switchTab(tab) {
     }
 }
 
-async function showSeriesEpisodes(seriesTitle, episodesJson) {
-    console.log("Showing episodes for series:", seriesTitle);
-    const episodes = JSON.parse(episodesJson); // Parse the JSON string back to array
-    document.getElementById("series-list").classList.add("hidden");
-    document.getElementById("series-episodes").classList.remove("hidden");
-    document.getElementById("series-title").textContent = seriesTitle;
+async function showSeriesEpisodes(seriesTitle, episodes) {
+    console.log("Showing episodes for series:", seriesTitle, "Episodes:", episodes);
+    try {
+        document.getElementById("series-list").classList.add("hidden");
+        const seriesEpisodesDiv = document.getElementById("series-episodes");
+        if (!seriesEpisodesDiv) {
+            console.error("series-episodes div not found");
+            return;
+        }
+        seriesEpisodesDiv.classList.remove("hidden");
 
-    const episodeList = document.getElementById("episode-list");
-    episodeList.innerHTML = "";
+        const seriesTitleEl = document.getElementById("series-title");
+        if (!seriesTitleEl) {
+            console.error("series-title element not found");
+            return;
+        }
+        seriesTitleEl.textContent = seriesTitle;
 
-    episodes.forEach((episode, index) => {
-        const episodeDiv = document.createElement("div");
-        episodeDiv.classList.add("episode-item");
-        episodeDiv.dataset.id = episode.id;
-        episodeDiv.innerHTML = `
-            <span class="hamburger">☰</span>
-            <input type="text" value="${episode.title}" data-original="${episode.title}">
-            <button onclick="editEpisode('${episode.id}')">Edit</button>
-            <button class="delete-btn" onclick="deleteStory('${episode.id}')">Delete</button>
-        `;
-        episodeList.appendChild(episodeDiv);
-    });
+        const episodeList = document.getElementById("episode-list");
+        if (!episodeList) {
+            console.error("episode-list element not found");
+            return;
+        }
+        episodeList.innerHTML = "";
 
-    // Add Quick Add Episode button
-    const quickAddBtn = document.createElement("button");
-    quickAddBtn.textContent = "Quick Add Episode";
-    quickAddBtn.addEventListener("click", () => quickAddEpisode(seriesTitle));
-    episodeList.appendChild(quickAddBtn);
+        episodes.forEach((episode, index) => {
+            const episodeDiv = document.createElement("div");
+            episodeDiv.classList.add("episode-item");
+            episodeDiv.dataset.id = episode.id;
+            episodeDiv.innerHTML = `
+                <span class="hamburger">☰</span>
+                <input type="text" value="${episode.title}" data-original="${episode.title}">
+                <button onclick="editEpisode('${episode.id}')">Edit</button>
+                <button class="delete-btn" onclick="deleteStory('${episode.id}')">Delete</button>
+            `;
+            episodeList.appendChild(episodeDiv);
+        });
 
-    new Sortable(episodeList, {
-        animation: 150,
-        handle: '.hamburger',
-        onEnd: () => console.log("Episode order changed")
-    });
+        // Add Quick Add Episode button
+        const quickAddBtn = document.createElement("button");
+        quickAddBtn.textContent = "Quick Add Episode";
+        quickAddBtn.addEventListener("click", () => quickAddEpisode(seriesTitle));
+        episodeList.appendChild(quickAddBtn);
+
+        new Sortable(episodeList, {
+            animation: 150,
+            handle: '.hamburger',
+            onEnd: () => console.log("Episode order changed")
+        });
+
+        console.log("Episodes rendered successfully for:", seriesTitle);
+    } catch (error) {
+        console.error("Error in showSeriesEpisodes:", error);
+        alert("Failed to load episodes: " + error.message);
+    }
 }
 
 function editEpisode(storyId) {
@@ -1595,7 +1621,7 @@ async function quickAddEpisode(seriesTitle) {
         }
 
         alert(`Episode ${newEpisodeNum} of "${seriesTitle}" added successfully!`);
-        showSeriesEpisodes(seriesTitle, JSON.stringify([...episodes, { id: storyId, title: newTitle, category: "Series" }]));
+        showSeriesEpisodes(seriesTitle, [...episodes, { id: storyId, title: newTitle, category: "Series" }]);
     } catch (error) {
         console.error("Error adding episode:", error);
         alert("Failed to add episode: " + error.message);
