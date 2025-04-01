@@ -67,7 +67,7 @@ async function signOut() {
 function showAdmin() {
     homeScreen.classList.add("hidden");
     adminScreen.classList.remove("hidden");
-    loadStoryList();
+    loadStoryList(); // Ensure this runs when Admin Panel opens
 }
 
 function hideAdmin() {
@@ -1193,14 +1193,21 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
 
 async function loadStoryList() {
     const language = document.getElementById("edit-story-language").value;
-    console.log("Selected language:", language);
-    const { data: stories, error } = await supabase.from('stories').select('id, title, category').eq('language', language).order('title');
-    
+    console.log("Loading stories for language:", language);
+
+    const { data: stories, error } = await supabase
+        .from('stories')
+        .select('id, title, category')
+        .eq('language', language)
+        .order('title');
+
     if (error) {
-        console.error("Error loading stories:", error.message);
+        console.error("Error fetching stories:", error.message);
         alert("Failed to load stories: " + error.message);
         return;
     }
+
+    console.log("Fetched stories:", stories);
 
     const individualStoriesDiv = document.getElementById("individual-stories");
     const seriesListDiv = document.getElementById("series-list");
@@ -1208,15 +1215,17 @@ async function loadStoryList() {
     seriesListDiv.innerHTML = "";
 
     if (!stories || stories.length === 0) {
-        individualStoriesDiv.innerHTML = "<p>No individual stories found.</p>";
-        seriesListDiv.innerHTML = "<p>No series found.</p>";
+        individualStoriesDiv.innerHTML = "<p>No individual stories found for this language.</p>";
+        seriesListDiv.innerHTML = "<p>No series found for this language.</p>";
         console.log("No stories found for language:", language);
         return;
     }
 
     const seriesGroups = {};
     const nonSeriesStories = [];
+
     stories.forEach(story => {
+        console.log("Processing story:", story);
         if (story.category === "Series") {
             const match = story.title.match(/^(.*?)(?:\s*(Ep|Episode)\s*(\d+))?$/i);
             const seriesTitle = match ? match[1].trim() : story.title;
@@ -1226,6 +1235,9 @@ async function loadStoryList() {
             nonSeriesStories.push(story);
         }
     });
+
+    console.log("Non-series stories:", nonSeriesStories);
+    console.log("Series groups:", seriesGroups);
 
     nonSeriesStories.forEach(story => {
         const item = document.createElement("div");
@@ -1248,6 +1260,8 @@ async function loadStoryList() {
         `;
         seriesListDiv.appendChild(groupDiv);
     }
+
+    console.log("Stories rendered - Individual:", nonSeriesStories.length, "Series:", Object.keys(seriesGroups).length);
 }
 
 async function deleteStory(storyId) {
