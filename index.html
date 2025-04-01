@@ -25,6 +25,7 @@
     <meta name="twitter:image" content="https://textalingo.com/Assets/socialshare.jpg">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
     <div id="initial-splash" class="screen">
@@ -285,7 +286,21 @@ Come stai? (How are you?) sent" required></textarea>
                     <option value="irish">Irish</option>
                 </select>
             </div>
-            <div id="story-list"></div>
+            <div class="tabs">
+                <button id="individual-tab" class="tab-button active" onclick="switchTab('individual')">Individual Stories</button>
+                <button id="series-tab" class="tab-button" onclick="switchTab('series')">Series</button>
+            </div>
+            <div id="individual-stories" class="tab-content"></div>
+            <div id="series-stories" class="tab-content hidden">
+                <div id="series-list"></div>
+                <div id="series-episodes" class="hidden">
+                    <h3 id="series-title"></h3>
+                    <div id="episode-list" class="sortable"></div>
+                    <button id="add-episode-btn" onclick="addNewEpisode()">Add New Episode</button>
+                    <button id="save-series-btn" onclick="saveSeriesChanges()">Save Series</button>
+                    <button id="back-to-series-btn" onclick="backToSeriesList()">Back to Series List</button>
+                </div>
+            </div>
             <form id="edit-story-form" class="hidden admin-form">
                 <h3>Edit Story</h3>
                 <input type="hidden" id="edit-story-id">

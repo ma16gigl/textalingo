@@ -67,7 +67,7 @@ async function signOut() {
 function showAdmin() {
     homeScreen.classList.add("hidden");
     adminScreen.classList.remove("hidden");
-    loadStoryList(); // Ensure this runs when Admin Panel opens
+    loadStoryList();
 }
 
 function hideAdmin() {
@@ -1195,6 +1195,15 @@ async function loadStoryList() {
     const language = document.getElementById("edit-story-language").value;
     console.log("Loading stories for language:", language);
 
+    const individualStoriesDiv = document.getElementById("individual-stories");
+    const seriesListDiv = document.getElementById("series-list");
+
+    if (!individualStoriesDiv || !seriesListDiv) {
+        console.error("DOM elements not found: individual-stories or series-list missing");
+        alert("Error: Required DOM elements not found. Check HTML structure.");
+        return;
+    }
+
     const { data: stories, error } = await supabase
         .from('stories')
         .select('id, title, category')
@@ -1204,13 +1213,13 @@ async function loadStoryList() {
     if (error) {
         console.error("Error fetching stories:", error.message);
         alert("Failed to load stories: " + error.message);
+        individualStoriesDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+        seriesListDiv.innerHTML = `<p>Error: ${error.message}</p>`;
         return;
     }
 
     console.log("Fetched stories:", stories);
 
-    const individualStoriesDiv = document.getElementById("individual-stories");
-    const seriesListDiv = document.getElementById("series-list");
     individualStoriesDiv.innerHTML = "";
     seriesListDiv.innerHTML = "";
 
