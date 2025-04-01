@@ -1481,7 +1481,7 @@ function switchTab(tab) {
 
 async function showSeriesEpisodes(seriesTitle, episodes) {
     console.log("Showing episodes for series:", seriesTitle, "Episodes:", episodes);
-    const language = document.getElementById("edit-story-language").value; // Get language here
+    const language = document.getElementById("edit-story-language").value;
     document.getElementById("series-list").classList.add("hidden");
     const seriesEpisodesDiv = document.getElementById("series-episodes");
     seriesEpisodesDiv.classList.remove("hidden");
@@ -1503,12 +1503,6 @@ async function showSeriesEpisodes(seriesTitle, episodes) {
         episodeList.appendChild(episodeDiv);
     });
 
-    // Add Quick Add Episode button with language context
-    const quickAddBtn = document.createElement("button");
-    quickAddBtn.textContent = "Quick Add Episode";
-    quickAddBtn.addEventListener("click", () => quickAddEpisode(seriesTitle, language));
-    episodeList.appendChild(quickAddBtn);
-
     new Sortable(episodeList, {
         animation: 150,
         handle: '.hamburger',
@@ -1520,76 +1514,6 @@ function editEpisode(storyId) {
     editStory(storyId);
 }
 
-async function quickAddEpisode(seriesTitle, language) {
-    const episodeList = document.getElementById("episode-list").children;
-    let maxEpisode = 0;
-
-    for (let episodeDiv of episodeList) {
-        const title = episodeDiv.querySelector("input").value;
-        const match = title.match(/Ep(?:isode)?\s*(\d+)/i);
-        if (match) {
-            const num = Number(match[1]);
-            maxEpisode = Math.max(maxEpisode, num);
-        }
-    }
-
-    const newEpisodeNum = maxEpisode + 1;
-    const newTitle = `${seriesTitle} Episode ${newEpisodeNum}`;
-
-    try {
-        const response = await fetch('/.netlify/functions/generate-story', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                language, 
-                category: "Series", 
-                title: seriesTitle, 
-                episode: newEpisodeNum 
-            })
-        });
-
-        if (!response.ok) throw new Error(`Server error: ${await response.text()}`);
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
-
-        const storyText = data.story;
-        const lines = storyText.split('\n').map(line => line.trim()).filter(line => line);
-        const messages = [];
-        const translationsData = [];
-
-        lines.forEach((line, index) => {
-            const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
-            if (!match) throw new Error(`Invalid format in line ${index + 1}: "${line}"`);
-            const [_, foreignText, englishTranslation, sender] = match;
-            messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), delay: 2000 });
-            translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
-        });
-
-        const { data: story, error: storyError } = await supabase
-            .from('stories')
-            .insert([{ language, title: newTitle, category: "Series", created_at: new Date().toISOString() }])
-            .select()
-            .single();
-        if (storyError) throw new Error(`Failed to add episode: ${storyError.message}`);
-
-        const storyId = story.id;
-        const { error: messageError } = await supabase
-            .from('messages')
-            .insert(messages.map(msg => ({ story_id: storyId, ...msg })));
-        if (messageError) throw new Error(`Failed to add messages: ${messageError.message}`);
-
-        const { error: translationError } = await supabase
-            .from('message_translations')
-            .insert(translationsData);
-        if (translationError) throw new Error(`Failed to add translations: ${translationError.message}`);
-
-        alert(`Episode ${newEpisodeNum} of "${seriesTitle}" added successfully!`);
-        showSeriesEpisodes(seriesTitle, [...episodes, { id: storyId, title: newTitle, category: "Series" }]);
-    } catch (error) {
-        console.error("Error adding episode:", error);
-        alert("Failed to add episode: " + error.message);
-    }
-}
 function addNewEpisode() {
     const seriesTitle = document.getElementById("series-title").textContent;
     const language = document.getElementById("edit-story-language").value;
@@ -1612,46 +1536,50 @@ function addNewEpisode() {
     episodeForm.innerHTML = `
         <h3>Add Episode to "${seriesTitle}"</h3>
         <div class="form-row">
-            <label>Language:</label>
-            <input type="text" value="${language}" disabled>
-            <input type="hidden" id="add-episode-language" value="${language}">
+            <label for="add-episode-language">Language:</label>
+            <select id="add-episode-language" disabled>
+                <option value="${language}">${language.charAt(0).toUpperCase() + language.slice(1)}</option>
+            </select>
+            <input type="hidden" name="add-episode-language" value="${language}">
         </div>
         <div class="form-row">
-            <label>Title:</label>
+            <label for="add-episode-title">Title:</label>
             <input id="add-episode-title" type="text" value="${seriesTitle} Episode ${newEpisodeNum}" required>
         </div>
         <div class="form-row">
-            <label>Is New:</label>
+            <label for="add-episode-is-new">Is New:</label>
             <select id="add-episode-is-new">
                 <option value="0">No</option>
                 <option value="1">Yes</option>
             </select>
         </div>
         <div class="form-row">
-            <label>Popular Now:</label>
+            <label for="add-episode-popular-now">Popular Now:</label>
             <select id="add-episode-popular-now">
                 <option value="0">No</option>
                 <option value="1">Yes</option>
             </select>
         </div>
         <div class="form-row">
-            <label>Premium:</label>
+            <label for="add-episode-premium">Premium:</label>
             <select id="add-episode-premium">
                 <option value="0">No</option>
                 <option value="1">Yes</option>
             </select>
         </div>
         <div class="form-row">
-            <label>Category:</label>
-            <input type="text" value="Series" disabled>
-            <input type="hidden" id="add-episode-category" value="Series">
+            <label for="add-episode-category">Category:</label>
+            <select id="add-episode-category" disabled>
+                <option value="Series">Series</option>
+            </select>
+            <input type="hidden" name="add-episode-category" value="Series">
         </div>
         <div class="form-row">
-            <label>Episode:</label>
+            <label for="add-episode-number">Episode:</label>
             <input id="add-episode-number" type="number" min="1" value="${newEpisodeNum}" required>
         </div>
         <div class="form-row">
-            <label>Cover Photo:</label>
+            <label for="add-episode-cover-photo">Cover Photo:</label>
             <div id="add-episode-drop-zone" class="drop-zone">
                 <p>Drag & drop an image here or click to upload</p>
                 <input type="file" id="add-episode-cover-photo-input" accept="image/*" style="display: none;">
@@ -1659,13 +1587,17 @@ function addNewEpisode() {
             </div>
             <input id="add-episode-cover-photo" type="hidden">
         </div>
+        <div class="form-row form-button-row">
+            <label></label>
+            <button type="button" onclick="generateCoverPhotoForEpisode()">Generate Cover Photo</button>
+        </div>
         <div class="form-row">
-            <label>Delay (ms):</label>
+            <label for="add-episode-delay">Delay (ms):</label>
             <input id="add-episode-delay" type="number" value="2000" required>
         </div>
         <div class="form-row textarea-row">
-            <label>Messages and Translations:</label>
-            <textarea id="add-episode-text" rows="10" placeholder="Format: foreign sentence (English translation) sender" required></textarea>
+            <label for="add-episode-text">Messages and Translations:</label>
+            <textarea id="add-episode-text" rows="10" placeholder="Format each line as: foreign sentence (English translation) sender\ne.g.\nCiao (Hello) received\nCome stai? (How are you?) sent" required></textarea>
         </div>
         <div class="form-buttons">
             <button type="button" onclick="generateEpisodeStory()">Generate Story</button>
@@ -1787,12 +1719,102 @@ function addNewEpisode() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const addNewEpisodeBtn = document.getElementById("add-new-episode-btn");
-    if (addNewEpisodeBtn) {
-        addNewEpisodeBtn.addEventListener("click", addNewEpisode);
+async function generateEpisodeStory() {
+    const language = document.getElementById("add-episode-language").value;
+    const title = document.getElementById("add-episode-title").value.trim();
+    const episode = Number(document.getElementById("add-episode-number").value);
+
+    try {
+        const response = await fetch('/.netlify/functions/generate-story', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language, category: "Series", title, episode })
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${await response.text()}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        document.getElementById("add-episode-text").value = data.story;
+        alert(`Episode ${episode} generated successfully!`);
+    } catch (error) {
+        console.error("Error generating episode:", error);
+        alert("Failed to generate episode: " + error.message);
     }
-});
+}
+
+async function generateCoverPhotoForEpisode() {
+    const storyText = document.getElementById("add-episode-text").value.trim();
+    const title = document.getElementById("add-episode-title").value.trim();
+    const category = document.getElementById("add-episode-category").value || "Series";
+
+    if (!storyText || !title) {
+        alert("Please provide both a story and a title before generating a cover photo.");
+        return;
+    }
+
+    const prompt = `Ultra photorealistic image for a ${category} story "${title}". Capture a vivid, detailed scene with realistic lighting and textures, reflecting the mood and setting from: "${storyText.substring(0, 200)}..."`;
+    
+    if (prompt.length > 1000) {
+        console.warn("Prompt exceeds 1000 characters, truncating:", prompt.length);
+        prompt = prompt.substring(0, 999);
+    }
+    console.log("Prompt length:", prompt.length, "characters");
+    console.log("Generated prompt:", prompt);
+
+    try {
+        const payload = {
+            prompt: prompt,
+            n: 1,
+            size: "1024x1024",
+            response_format: "b64_json"
+        };
+        console.log("Sending request to OpenAI with payload:", JSON.stringify(payload));
+        const response = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenAI Image API error: ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const imageBase64 = data.data[0].b64_json;
+
+        const byteCharacters = atob(imageBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/png' });
+
+        const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('cover-photos')
+            .upload(fileName, blob, { contentType: 'image/png' });
+
+        if (uploadError) {
+            console.error("Error uploading image to Supabase:", uploadError.message);
+            throw new Error(`Failed to upload cover photo: ${uploadError.message}`);
+        }
+
+        const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
+        const coverPhotoUrl = urlData.publicUrl;
+        document.getElementById("add-episode-cover-photo").value = coverPhotoUrl;
+        alert("Cover photo generated and uploaded successfully!");
+    } catch (error) {
+        console.error("Error generating cover photo:", error);
+        alert("Failed to generate cover photo: " + error.message);
+    }
+}
+
 async function saveSeriesChanges() {
     const language = document.getElementById("edit-story-language").value;
     const episodeList = document.getElementById("episode-list").children;
@@ -1805,127 +1827,129 @@ async function saveSeriesChanges() {
 
         if (storyId.startsWith("new-")) {
             const { data: story, error: storyError } = await supabase
-                .from('stories')
-                .insert([{ language, title: newTitle, category: "Series" }])
-                .select()
-                .single();
-            if (storyError) {
-                console.error("Error adding new episode:", storyError.message);
-                alert("Failed to add new episode: " + storyError.message);
-                return;
-            }
-            episodeDiv.dataset.id = story.id;
-        } else if (newTitle !== originalTitle) {
-            const { error: storyError } = await supabase
-                .from('stories')
-                .update({ title: newTitle })
-                .eq('id', storyId);
-            if (storyError) {
-                console.error("Error updating episode:", storyError.message);
-                alert("Failed to update episode: " + storyError.message);
-                return;
-            }
-            episodeDiv.querySelector("input").dataset.original = newTitle;
+            .from('stories')
+            .insert([{ language, title: newTitle, category: "Series" }])
+            .select()
+            .single();
+        if (storyError) {
+            console.error("Error adding new episode:", storyError.message);
+            alert("Failed to add new episode: " + storyError.message);
+            return;
         }
+        episodeDiv.dataset.id = story.id;
+    } else if (newTitle !== originalTitle) {
+        const { error: storyError } = await supabase
+            .from('stories')
+            .update({ title: newTitle })
+            .eq('id', storyId);
+        if (storyError) {
+            console.error("Error updating episode:", storyError.message);
+            alert("Failed to update episode: " + storyError.message);
+            return;
+        }
+        episodeDiv.querySelector("input").dataset.original = newTitle;
     }
-
-    alert("Series changes saved successfully!");
-    backToSeriesList();
+}
+alert("Series changes saved successfully!");
+backToSeriesList();
 }
 
 function backToSeriesList() {
-    document.getElementById("series-episodes").classList.add("hidden");
-    document.getElementById("series-list").classList.remove("hidden");
-    loadStoryList();
+document.getElementById("series-episodes").classList.add("hidden");
+document.getElementById("series-list").classList.remove("hidden");
+loadStoryList();
 }
 
 function toggleFavorite(word, translation) {
-    const key = `${currentLanguage}_favorites`;
-    let favorites = JSON.parse(localStorage.getItem(key)) || [];
-    const index = favorites.findIndex(item => item.word === word);
-    if (index === -1) {
-        favorites.push({ word, translation });
-    } else {
-        favorites.splice(index, 1);
-    }
-    localStorage.setItem(key, JSON.stringify(favorites));
+const key = `${currentLanguage}_favorites`;
+let favorites = JSON.parse(localStorage.getItem(key)) || [];
+const index = favorites.findIndex(item => item.word === word);
+if (index === -1) {
+    favorites.push({ word, translation });
+} else {
+    favorites.splice(index, 1);
+}
+localStorage.setItem(key, JSON.stringify(favorites));
 }
 
 function checkFavorite(word) {
-    const key = `${currentLanguage}_favorites`;
-    const favorites = JSON.parse(localStorage.getItem(key)) || [];
-    return favorites.some(item => item.word === word);
+const key = `${currentLanguage}_favorites`;
+const favorites = JSON.parse(localStorage.getItem(key)) || [];
+return favorites.some(item => item.word === word);
 }
 
-function loadFavoriteWords() {
-    const key = `${currentLanguage}_favorites`;
-    const favorites = JSON.parse(localStorage.getItem(key)) || [];
-    favoriteWordsDiv.innerHTML = "";
-    favorites.forEach(({ word, translation }) => {
-        const item = document.createElement("div");
-        item.classList.add("word-item");
-        item.innerHTML = `<span>${word} - ${translation}</span>`;
-        favoriteWordsDiv.appendChild(item);
-    });
-    if (favorites.length === 0) {
-        favoriteWordsDiv.innerHTML = "<p>No favorite words yet!</p>";
-    }
+async function loadFavoriteWords() {
+const key = `${currentLanguage}_favorites`;
+const favorites = JSON.parse(localStorage.getItem(key)) || [];
+favoriteWordsDiv.innerHTML = "";
+
+if (favorites.length === 0) {
+    favoriteWordsDiv.innerHTML = "<p>No favorite words saved yet.</p>";
+    return;
 }
 
-async function handlePaymentSuccess(sessionId) {
-    console.log("Handling payment success for session:", sessionId);
-    try {
-        await updateUserSubscription(sessionId);
-        console.log("Subscription updated, redirecting to home");
-        window.location.href = "/";
-    } catch (error) {
-        console.error("Error in handlePaymentSuccess:", error);
-        window.location.href = "/";
-    }
+favorites.forEach(item => {
+    const wordDiv = document.createElement("div");
+    wordDiv.classList.add("favorite-word");
+    wordDiv.innerHTML = `
+        <span>${item.word} - ${item.translation}</span>
+        <button onclick="toggleFavorite('${item.word}', '${item.translation}'); loadFavoriteWords();">Remove</button>
+    `;
+    favoriteWordsDiv.appendChild(wordDiv);
+});
 }
 
 async function cancelSubscription() {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-        alert("Please sign in to manage your subscription.");
-        return;
-    }
+const { data: userData } = await supabase.auth.getUser();
+const userId = userData.user.id;
 
-    const userId = userData.user.id;
-    const { data: subData } = await supabase
-        .from('user_subscriptions')
-        .select('plan, status')
-        .eq('user_id', userId)
-        .single();
+const { data: subData, error: subError } = await supabase
+    .from('user_subscriptions')
+    .select('stripe_sub_id')
+    .eq('user_id', userId)
+    .single();
 
-    if (!subData || subData.status !== 'active') {
-        alert("No active subscription found to cancel.");
-        return;
-    }
-
-    if (subData.plan === 'lifetime') {
-        alert("Lifetime plans cannot be canceled as they are one-time purchases.");
-        return;
-    }
-
-    try {
-        const response = await fetch('/.netlify/functions/cancel-subscription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Cancellation failed: ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log("Cancellation result:", result);
-        alert("Your subscription has been canceled. You’ll retain access until the end of your current billing period.");
-        loadProfile();
-    } catch (error) {
-        console.error("Error canceling subscription:", error);
-        alert("Failed to cancel subscription. Please try again or contact support.");
-    }
+if (subError || !subData) {
+    console.error("Error fetching subscription:", subError?.message);
+    alert("Failed to load subscription data.");
+    return;
 }
+
+const stripeSubId = subData.stripe_sub_id;
+
+try {
+    const response = await fetch('/.netlify/functions/cancel-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: stripeSubId })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${errorText}`);
+    }
+
+    const result = await response.json();
+    if (result.error) {
+        throw new Error(result.error);
+    }
+
+    await supabase
+        .from('user_subscriptions')
+        .update({ status: 'canceled', updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+    alert("Subscription canceled successfully!");
+    loadProfile();
+} catch (error) {
+    console.error("Error canceling subscription:", error);
+    alert("Failed to cancel subscription: " + error.message);
+}
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+const addNewEpisodeBtn = document.getElementById("add-new-episode-btn");
+if (addNewEpisodeBtn) {
+    addNewEpisodeBtn.addEventListener("click", addNewEpisode);
+}
+});
