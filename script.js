@@ -108,7 +108,9 @@ async function loadTranslations() {
     }
     translations = {};
     if (data) {
-        data.forEach(item => translations[item.message_text.toLowerCase()] = item.translation);
+        data.forEach(item => {
+            translations[item.message_text.toLowerCase()] = item.translation;
+        });
     }
 }
 
@@ -676,7 +678,6 @@ async function updateDropdown() {
         languageDropdown.appendChild(signOutBtn);
         console.log("Basic user options added: Profile, My Words, Change Language, Sign Out");
 
-        console.log("Checking isAdmin:", isAdmin);
         if (isAdmin) {
             const adminBtn = document.createElement("button");
             adminBtn.textContent = "Admin Panel";
@@ -758,10 +759,12 @@ async function loadSeriesOptions() {
         return;
     }
 
+    console.log("Series stories fetched:", seriesStories);
+
     if (seriesStories && seriesStories.length > 0) {
         const seriesTitles = new Set();
         seriesStories.forEach(story => {
-            const match = story.title.match(/^(.*?)\s*(Ep|Episode)\s*\d+$/i);
+            const match = story.title.match(/^(.*?)(?:\s*(Ep|Episode)\s*\d+)?$/i);
             const baseTitle = match ? match[1].trim() : story.title;
             seriesTitles.add(baseTitle);
         });
@@ -772,11 +775,14 @@ async function loadSeriesOptions() {
             option.textContent = title;
             seriesSelect.appendChild(option);
         });
+    } else {
+        console.log("No series found for language:", language);
     }
 }
 
 function selectExistingSeries() {
     const selectedSeries = document.getElementById("bulk-series-select").value;
+    console.log("Selected series:", selectedSeries);
     if (selectedSeries) {
         document.getElementById("bulk-story-category").value = "Series";
         toggleEpisodeField();
@@ -795,6 +801,7 @@ function selectExistingSeries() {
                     console.error("Error fetching series episodes:", error.message);
                     return;
                 }
+                console.log("Matching series episodes:", data);
                 let maxEpisode = 0;
                 data.forEach(story => {
                     const match = story.title.match(/Ep(?:isode)?\s*(\d+)/i);
@@ -807,6 +814,8 @@ function selectExistingSeries() {
                 document.getElementById("bulk-story-episode").value = maxEpisode + 1;
                 document.getElementById("generate-next-episode-btn").disabled = false;
             });
+    } else {
+        console.log("No series selected");
     }
 }
 
@@ -820,9 +829,9 @@ async function generateStory() {
         const response = await fetch('/.netlify/functions/generate-story', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ language, category, title, episode }),
+            body: JSON.stringify({ language, category, title, episode })
         });
 
         if (!response.ok) {
@@ -865,14 +874,14 @@ async function generateNextEpisode() {
         const response = await fetch('/.netlify/functions/generate-story', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
                 language, 
                 category: "Series", 
                 title, 
                 episode: currentEpisodeNumber 
-            }),
+            })
         });
 
         if (!response.ok) {
@@ -1187,19 +1196,20 @@ async function loadStoryList() {
     console.log("Selected language:", language);
     const { data: stories, error } = await supabase.from('stories').select('id, title, category').eq('language', language).order('title');
     
-    console.log("Stories fetched from Supabase:", stories);
-    console.log("Error (if any):", error);
-
     if (error) {
         console.error("Error loading stories:", error.message);
         alert("Failed to load stories: " + error.message);
         return;
     }
 
-    const storyList = document.getElementById("story-list");
-    storyList.innerHTML = "";
+    const individualStoriesDiv = document.getElementById("individual-stories");
+    const seriesListDiv = document.getElementById("series-list");
+    individualStoriesDiv.innerHTML = "";
+    seriesListDiv.innerHTML = "";
+
     if (!stories || stories.length === 0) {
-        storyList.innerHTML = "<p>No stories found for this language.</p>";
+        individualStoriesDiv.innerHTML = "<p>No individual stories found.</p>";
+        seriesListDiv.innerHTML = "<p>No series found.</p>";
         console.log("No stories found for language:", language);
         return;
     }
@@ -1208,7 +1218,7 @@ async function loadStoryList() {
     const nonSeriesStories = [];
     stories.forEach(story => {
         if (story.category === "Series") {
-            const match = story.title.match(/^(.*?)\s*(Ep|Episode)\s*(\d+)/i);
+            const match = story.title.match(/^(.*?)(?:\s*(Ep|Episode)\s*(\d+))?$/i);
             const seriesTitle = match ? match[1].trim() : story.title;
             if (!seriesGroups[seriesTitle]) seriesGroups[seriesTitle] = [];
             seriesGroups[seriesTitle].push(story);
@@ -1216,34 +1226,6 @@ async function loadStoryList() {
             nonSeriesStories.push(story);
         }
     });
-
-    for (const [seriesTitle, episodes] of Object.entries(seriesGroups)) {
-        const groupDiv = document.createElement("div");
-        groupDiv.classList.add("series-group");
-        groupDiv.innerHTML = `
-            <button class="series-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">${seriesTitle} (${episodes.length} Episodes)</button>
-            <div class="series-episodes hidden"></div>
-        `;
-        const episodesDiv = groupDiv.querySelector(".series-episodes");
-        episodes.sort((a, b) => {
-            const aNum = Number(a.title.match(/Ep(?:isode)?\s*(\d+)/i)?.[1] || 0);
-            const bNum = Number(b.title.match(/Ep(?:isode)?\s*(\d+)/i)?.[1] || 0);
-            return aNum - bNum;
-        });
-        episodes.forEach(story => {
-            const item = document.createElement("div");
-            item.classList.add("story-item");
-            item.innerHTML = `
-                <span>${story.title}</span>
-                <div>
-                    <button onclick="editStory('${story.id}')">Edit</button>
-                    <button class="delete-btn" onclick="deleteStory('${story.id}')">Delete</button>
-                </div>
-            `;
-            episodesDiv.appendChild(item);
-        });
-        storyList.appendChild(groupDiv);
-    }
 
     nonSeriesStories.forEach(story => {
         const item = document.createElement("div");
@@ -1255,9 +1237,17 @@ async function loadStoryList() {
                 <button class="delete-btn" onclick="deleteStory('${story.id}')">Delete</button>
             </div>
         `;
-        storyList.appendChild(item);
+        individualStoriesDiv.appendChild(item);
     });
-    console.log("Story list populated with", stories.length, "stories");
+
+    for (const [seriesTitle, episodes] of Object.entries(seriesGroups)) {
+        const groupDiv = document.createElement("div");
+        groupDiv.classList.add("series-group");
+        groupDiv.innerHTML = `
+            <button class="series-toggle" onclick="showSeriesEpisodes('${seriesTitle}', ${JSON.stringify(episodes)})">${seriesTitle} (${episodes.length} Episodes)</button>
+        `;
+        seriesListDiv.appendChild(groupDiv);
+    }
 }
 
 async function deleteStory(storyId) {
@@ -1446,6 +1436,116 @@ document.getElementById("edit-story-form").addEventListener("submit", async (e) 
     loadStoryList();
 });
 
+function switchTab(tab) {
+    document.getElementById("individual-tab").classList.remove("active");
+    document.getElementById("series-tab").classList.remove("active");
+    document.getElementById("individual-stories").classList.add("hidden");
+    document.getElementById("series-stories").classList.add("hidden");
+
+    document.getElementById(`${tab}-tab`).classList.add("active");
+    document.getElementById(`${tab}-stories`).classList.remove("hidden");
+
+    if (tab === "series") {
+        document.getElementById("series-episodes").classList.add("hidden");
+        document.getElementById("series-list").classList.remove("hidden");
+    }
+}
+
+async function showSeriesEpisodes(seriesTitle, episodes) {
+    document.getElementById("series-list").classList.add("hidden");
+    document.getElementById("series-episodes").classList.remove("hidden");
+    document.getElementById("series-title").textContent = seriesTitle;
+
+    const episodeList = document.getElementById("episode-list");
+    episodeList.innerHTML = "";
+
+    episodes.forEach((episode, index) => {
+        const episodeDiv = document.createElement("div");
+        episodeDiv.classList.add("episode-item");
+        episodeDiv.dataset.id = episode.id;
+        episodeDiv.innerHTML = `
+            <span class="hamburger">☰</span>
+            <input type="text" value="${episode.title}" data-original="${episode.title}">
+            <button onclick="editEpisode('${episode.id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteStory('${episode.id}')">Delete</button>
+        `;
+        episodeList.appendChild(episodeDiv);
+    });
+
+    new Sortable(episodeList, {
+        animation: 150,
+        handle: '.hamburger',
+        onEnd: () => console.log("Episode order changed")
+    });
+}
+
+function editEpisode(storyId) {
+    editStory(storyId);
+}
+
+function addNewEpisode() {
+    const seriesTitle = document.getElementById("series-title").textContent;
+    const episodeList = document.getElementById("episode-list");
+    const episodeCount = episodeList.children.length + 1;
+    const newEpisodeTitle = `${seriesTitle} Episode ${episodeCount}`;
+
+    const episodeDiv = document.createElement("div");
+    episodeDiv.classList.add("episode-item");
+    episodeDiv.dataset.id = "new-" + Date.now();
+    episodeDiv.innerHTML = `
+        <span class="hamburger">☰</span>
+        <input type="text" value="${newEpisodeTitle}" data-original="${newEpisodeTitle}">
+        <button onclick="this.parentElement.remove()">Remove</button>
+    `;
+    episodeList.appendChild(episodeDiv);
+}
+
+async function saveSeriesChanges() {
+    const language = document.getElementById("edit-story-language").value;
+    const episodeList = document.getElementById("episode-list").children;
+    const seriesTitle = document.getElementById("series-title").textContent;
+
+    for (let episodeDiv of episodeList) {
+        const storyId = episodeDiv.dataset.id;
+        const newTitle = episodeDiv.querySelector("input").value;
+        const originalTitle = episodeDiv.querySelector("input").dataset.original;
+
+        if (storyId.startsWith("new-")) {
+            const { data: story, error: storyError } = await supabase
+                .from('stories')
+                .insert([{ language, title: newTitle, category: "Series" }])
+                .select()
+                .single();
+            if (storyError) {
+                console.error("Error adding new episode:", storyError.message);
+                alert("Failed to add new episode: " + storyError.message);
+                return;
+            }
+            episodeDiv.dataset.id = story.id;
+        } else if (newTitle !== originalTitle) {
+            const { error: storyError } = await supabase
+                .from('stories')
+                .update({ title: newTitle })
+                .eq('id', storyId);
+            if (storyError) {
+                console.error("Error updating episode:", storyError.message);
+                alert("Failed to update episode: " + storyError.message);
+                return;
+            }
+            episodeDiv.querySelector("input").dataset.original = newTitle;
+        }
+    }
+
+    alert("Series changes saved successfully!");
+    backToSeriesList();
+}
+
+function backToSeriesList() {
+    document.getElementById("series-episodes").classList.add("hidden");
+    document.getElementById("series-list").classList.remove("hidden");
+    loadStoryList();
+}
+
 function toggleFavorite(word, translation) {
     const key = `${currentLanguage}_favorites`;
     let favorites = JSON.parse(localStorage.getItem(key)) || [];
@@ -1536,4 +1636,3 @@ async function cancelSubscription() {
         alert("Failed to cancel subscription. Please try again or contact support.");
     }
 }
-
