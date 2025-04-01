@@ -200,8 +200,7 @@ textarea {
 
 /* Story Tiles */
 #story-tiles {
-    width: 100%;
-    max-width: 1200px;
+    width: 90%; /* Changed from max-width: 1200px to 90% */
     padding: 0 1rem;
 }
 
@@ -427,8 +426,11 @@ textarea {
 
 /* Series Episodes Screen */
 #series-screen {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
     background-color: #101823;
     padding-top: 5rem;
+    min-height: 100vh;
 }
 
 #series-screen h1 {
@@ -799,6 +801,7 @@ html[lang="he"] .back-container,
     margin-left: calc(-50vw + 50%);
     padding-top: 1rem;
     background-color: #101823;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Admin Form Styling */
@@ -914,8 +917,8 @@ html[lang="he"] .back-container,
 /* Carousel Story Tile Styling */
 .carousel-track .story-tile {
     flex: 0 0 auto;
-    width: 11.5%;
-    min-width: 120px;
+    width: 10%; /* Reduced from 11.5% to fit more tiles */
+    min-width: 110px; /* Reduced from 120px */
     aspect-ratio: 2 / 3;
     scroll-snap-align: start;
     border-radius: 8px;
@@ -924,8 +927,8 @@ html[lang="he"] .back-container,
 
 /* Adjusted width for series-deck in carousel */
 .carousel-track .story-tile.series-deck {
-    width: 13%;
-    min-width: 140px;
+    width: 12%; /* Reduced from 13% */
+    min-width: 130px; /* Reduced from 140px */
 }
 
 .carousel-track .story-tile .title {
