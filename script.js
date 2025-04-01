@@ -1481,67 +1481,46 @@ function switchTab(tab) {
 
 async function showSeriesEpisodes(seriesTitle, episodes) {
     console.log("Showing episodes for series:", seriesTitle, "Episodes:", episodes);
-    try {
-        document.getElementById("series-list").classList.add("hidden");
-        const seriesEpisodesDiv = document.getElementById("series-episodes");
-        if (!seriesEpisodesDiv) {
-            console.error("series-episodes div not found");
-            return;
-        }
-        seriesEpisodesDiv.classList.remove("hidden");
+    const language = document.getElementById("edit-story-language").value; // Get language here
+    document.getElementById("series-list").classList.add("hidden");
+    const seriesEpisodesDiv = document.getElementById("series-episodes");
+    seriesEpisodesDiv.classList.remove("hidden");
 
-        const seriesTitleEl = document.getElementById("series-title");
-        if (!seriesTitleEl) {
-            console.error("series-title element not found");
-            return;
-        }
-        seriesTitleEl.textContent = seriesTitle;
+    document.getElementById("series-title").textContent = seriesTitle;
+    const episodeList = document.getElementById("episode-list");
+    episodeList.innerHTML = "";
 
-        const episodeList = document.getElementById("episode-list");
-        if (!episodeList) {
-            console.error("episode-list element not found");
-            return;
-        }
-        episodeList.innerHTML = "";
+    episodes.forEach((episode, index) => {
+        const episodeDiv = document.createElement("div");
+        episodeDiv.classList.add("episode-item");
+        episodeDiv.dataset.id = episode.id;
+        episodeDiv.innerHTML = `
+            <span class="hamburger">☰</span>
+            <input type="text" value="${episode.title}" data-original="${episode.title}">
+            <button onclick="editEpisode('${episode.id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteStory('${episode.id}')">Delete</button>
+        `;
+        episodeList.appendChild(episodeDiv);
+    });
 
-        episodes.forEach((episode, index) => {
-            const episodeDiv = document.createElement("div");
-            episodeDiv.classList.add("episode-item");
-            episodeDiv.dataset.id = episode.id;
-            episodeDiv.innerHTML = `
-                <span class="hamburger">☰</span>
-                <input type="text" value="${episode.title}" data-original="${episode.title}">
-                <button onclick="editEpisode('${episode.id}')">Edit</button>
-                <button class="delete-btn" onclick="deleteStory('${episode.id}')">Delete</button>
-            `;
-            episodeList.appendChild(episodeDiv);
-        });
+    // Add Quick Add Episode button with language context
+    const quickAddBtn = document.createElement("button");
+    quickAddBtn.textContent = "Quick Add Episode";
+    quickAddBtn.addEventListener("click", () => quickAddEpisode(seriesTitle, language));
+    episodeList.appendChild(quickAddBtn);
 
-        // Add Quick Add Episode button
-        const quickAddBtn = document.createElement("button");
-        quickAddBtn.textContent = "Quick Add Episode";
-        quickAddBtn.addEventListener("click", () => quickAddEpisode(seriesTitle));
-        episodeList.appendChild(quickAddBtn);
-
-        new Sortable(episodeList, {
-            animation: 150,
-            handle: '.hamburger',
-            onEnd: () => console.log("Episode order changed")
-        });
-
-        console.log("Episodes rendered successfully for:", seriesTitle);
-    } catch (error) {
-        console.error("Error in showSeriesEpisodes:", error);
-        alert("Failed to load episodes: " + error.message);
-    }
+    new Sortable(episodeList, {
+        animation: 150,
+        handle: '.hamburger',
+        onEnd: () => console.log("Episode order changed")
+    });
 }
 
 function editEpisode(storyId) {
     editStory(storyId);
 }
 
-async function quickAddEpisode(seriesTitle) {
-    const language = document.getElementById("edit-story-language").value;
+async function quickAddEpisode(seriesTitle, language) {
     const episodeList = document.getElementById("episode-list").children;
     let maxEpisode = 0;
 
@@ -1560,9 +1539,7 @@ async function quickAddEpisode(seriesTitle) {
     try {
         const response = await fetch('/.netlify/functions/generate-story', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 language, 
                 category: "Series", 
@@ -1571,15 +1548,9 @@ async function quickAddEpisode(seriesTitle) {
             })
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Server error: ${response.status} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`Server error: ${await response.text()}`);
         const data = await response.json();
-        if (data.error) {
-            throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
 
         const storyText = data.story;
         const lines = storyText.split('\n').map(line => line.trim()).filter(line => line);
@@ -1588,9 +1559,7 @@ async function quickAddEpisode(seriesTitle) {
 
         lines.forEach((line, index) => {
             const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
-            if (!match) {
-                throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "foreign sentence (English translation) received or sent".`);
-            }
+            if (!match) throw new Error(`Invalid format in line ${index + 1}: "${line}"`);
             const [_, foreignText, englishTranslation, sender] = match;
             messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), delay: 2000 });
             translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
@@ -1601,24 +1570,18 @@ async function quickAddEpisode(seriesTitle) {
             .insert([{ language, title: newTitle, category: "Series", created_at: new Date().toISOString() }])
             .select()
             .single();
-        if (storyError) {
-            throw new Error(`Failed to add episode: ${storyError.message}`);
-        }
-        const storyId = story.id;
+        if (storyError) throw new Error(`Failed to add episode: ${storyError.message}`);
 
+        const storyId = story.id;
         const { error: messageError } = await supabase
             .from('messages')
             .insert(messages.map(msg => ({ story_id: storyId, ...msg })));
-        if (messageError) {
-            throw new Error(`Failed to add messages: ${messageError.message}`);
-        }
+        if (messageError) throw new Error(`Failed to add messages: ${messageError.message}`);
 
         const { error: translationError } = await supabase
             .from('message_translations')
             .insert(translationsData);
-        if (translationError) {
-            throw new Error(`Failed to add translations: ${translationError.message}`);
-        }
+        if (translationError) throw new Error(`Failed to add translations: ${translationError.message}`);
 
         alert(`Episode ${newEpisodeNum} of "${seriesTitle}" added successfully!`);
         showSeriesEpisodes(seriesTitle, [...episodes, { id: storyId, title: newTitle, category: "Series" }]);
@@ -1627,7 +1590,209 @@ async function quickAddEpisode(seriesTitle) {
         alert("Failed to add episode: " + error.message);
     }
 }
+function addNewEpisode() {
+    const seriesTitle = document.getElementById("series-title").textContent;
+    const language = document.getElementById("edit-story-language").value;
+    const episodeList = document.getElementById("episode-list").children;
+    let maxEpisode = 0;
 
+    for (let episodeDiv of episodeList) {
+        const title = episodeDiv.querySelector("input").value;
+        const match = title.match(/Ep(?:isode)?\s*(\d+)/i);
+        if (match) maxEpisode = Math.max(maxEpisode, Number(match[1]));
+    }
+    const newEpisodeNum = maxEpisode + 1;
+
+    let episodeForm = document.getElementById("add-episode-form");
+    if (episodeForm) episodeForm.remove();
+
+    episodeForm = document.createElement("form");
+    episodeForm.id = "add-episode-form";
+    episodeForm.classList.add("admin-form");
+    episodeForm.innerHTML = `
+        <h3>Add Episode to "${seriesTitle}"</h3>
+        <div class="form-row">
+            <label>Language:</label>
+            <input type="text" value="${language}" disabled>
+            <input type="hidden" id="add-episode-language" value="${language}">
+        </div>
+        <div class="form-row">
+            <label>Title:</label>
+            <input id="add-episode-title" type="text" value="${seriesTitle} Episode ${newEpisodeNum}" required>
+        </div>
+        <div class="form-row">
+            <label>Is New:</label>
+            <select id="add-episode-is-new">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Popular Now:</label>
+            <select id="add-episode-popular-now">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Premium:</label>
+            <select id="add-episode-premium">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Category:</label>
+            <input type="text" value="Series" disabled>
+            <input type="hidden" id="add-episode-category" value="Series">
+        </div>
+        <div class="form-row">
+            <label>Episode:</label>
+            <input id="add-episode-number" type="number" min="1" value="${newEpisodeNum}" required>
+        </div>
+        <div class="form-row">
+            <label>Cover Photo:</label>
+            <div id="add-episode-drop-zone" class="drop-zone">
+                <p>Drag & drop an image here or click to upload</p>
+                <input type="file" id="add-episode-cover-photo-input" accept="image/*" style="display: none;">
+                <img id="add-episode-cover-photo-preview" class="cover-preview" style="display: none; max-width: 100%; max-height: 200px;">
+            </div>
+            <input id="add-episode-cover-photo" type="hidden">
+        </div>
+        <div class="form-row">
+            <label>Delay (ms):</label>
+            <input id="add-episode-delay" type="number" value="2000" required>
+        </div>
+        <div class="form-row textarea-row">
+            <label>Messages and Translations:</label>
+            <textarea id="add-episode-text" rows="10" placeholder="Format: foreign sentence (English translation) sender" required></textarea>
+        </div>
+        <div class="form-buttons">
+            <button type="button" onclick="generateEpisodeStory()">Generate Story</button>
+            <button type="submit">Save Episode</button>
+            <button type="button" onclick="document.getElementById('add-episode-form').remove()">Cancel</button>
+        </div>
+    `;
+    document.getElementById("series-episodes").appendChild(episodeForm);
+
+    const dropZone = document.getElementById("add-episode-drop-zone");
+    const coverPhotoInput = document.getElementById("add-episode-cover-photo-input");
+    const coverPhotoPreview = document.getElementById("add-episode-cover-photo-preview");
+    let selectedFile = null;
+
+    dropZone.addEventListener("click", () => coverPhotoInput.click());
+    dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                coverPhotoPreview.src = e.target.result;
+                coverPhotoPreview.style.display = "block";
+                dropZone.querySelector("p").style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    coverPhotoInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                coverPhotoPreview.src = e.target.result;
+                coverPhotoPreview.style.display = "block";
+                dropZone.querySelector("p").style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    episodeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const language = document.getElementById("add-episode-language").value;
+        const title = document.getElementById("add-episode-title").value.trim();
+        const isNew = document.getElementById("add-episode-is-new").value === "1";
+        const popularNow = document.getElementById("add-episode-popular-now").value === "1";
+        const premium = document.getElementById("add-episode-premium").value === "1";
+        const category = document.getElementById("add-episode-category").value;
+        const episode = Number(document.getElementById("add-episode-number").value);
+        let coverPhoto = document.getElementById("add-episode-cover-photo").value || null;
+        const delay = Number(document.getElementById("add-episode-delay").value);
+        const text = document.getElementById("add-episode-text").value.trim();
+
+        if (!text) {
+            alert("Please enter or generate story text.");
+            return;
+        }
+
+        if (selectedFile) {
+            const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('cover-photos')
+                .upload(fileName, selectedFile, { contentType: selectedFile.type });
+            if (uploadError) {
+                alert("Failed to upload cover photo: " + uploadError.message);
+                return;
+            }
+            const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
+            coverPhoto = urlData.publicUrl;
+        }
+
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+        const messages = [];
+        const translationsData = [];
+
+        try {
+            lines.forEach((line, index) => {
+                const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
+                if (!match) throw new Error(`Invalid format in line ${index + 1}: "${line}"`);
+                const [_, foreignText, englishTranslation, sender] = match;
+                messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), delay });
+                translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
+            });
+
+            const { data: story, error: storyError } = await supabase
+                .from('stories')
+                .insert([{ language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto, created_at: new Date().toISOString() }])
+                .select()
+                .single();
+            if (storyError) throw new Error(`Failed to add episode: ${storyError.message}`);
+
+            const storyId = story.id;
+            const { error: messageError } = await supabase
+                .from('messages')
+                .insert(messages.map(msg => ({ story_id: storyId, ...msg })));
+            if (messageError) throw new Error(`Failed to add messages: ${messageError.message}`);
+
+            const { error: translationError } = await supabase
+                .from('message_translations')
+                .insert(translationsData);
+            if (translationError) throw new Error(`Failed to add translations: ${translationError.message}`);
+
+            alert(`Episode "${title}" added successfully!`);
+            episodeForm.remove();
+            showSeriesEpisodes(seriesTitle, [...episodes, { id: storyId, title, category: "Series" }]);
+        } catch (error) {
+            console.error("Error saving episode:", error);
+            alert("Failed to save episode: " + error.message);
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const addNewEpisodeBtn = document.getElementById("add-new-episode-btn");
+    if (addNewEpisodeBtn) {
+        addNewEpisodeBtn.addEventListener("click", addNewEpisode);
+    }
+});
 async function saveSeriesChanges() {
     const language = document.getElementById("edit-story-language").value;
     const episodeList = document.getElementById("episode-list").children;
