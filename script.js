@@ -212,7 +212,22 @@ async function loadHomeScreen(clearTiles = false) {
 
     console.log("Categories populated:", categories);
 
-    const categoryOrder = ["Popular Now", "Series", "Romance", "Thriller", "Horror", "Action/Adventure", "SciFi", "Comedy", "Business/Professional", "Mystery", "Other"];
+    const categoryOrder = [
+        "Popular Now",
+        "Series",
+        "Romance",
+        "Thriller",
+        "Horror",
+        "Action/Adventure",
+        "SciFi",
+        "Comedy",
+        "Business/Professional",
+        "Mystery",
+        "Sports",
+        "Family",
+        "Travel",
+        "Other"
+    ];
     const orderedCategories = {};
     categoryOrder.forEach(cat => {
         if (categories[cat]) orderedCategories[cat] = categories[cat];
