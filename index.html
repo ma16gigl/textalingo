@@ -230,8 +230,13 @@
                     <input id="bulk-story-episode" type="number" min="1" value="1" placeholder="Episode number">
                 </div>
                 <div class="form-row">
-                    <label for="bulk-cover-photo">Cover Photo (URL):</label>
-                    <input id="bulk-cover-photo" type="text" placeholder="Generated or enter URL">
+                    <label for="bulk-cover-photo">Cover Photo:</label>
+                    <div id="drop-zone" class="drop-zone">
+                        <p>Drag & drop an image here or click to upload</p>
+                        <input type="file" id="cover-photo-input" accept="image/*" style="display: none;">
+                        <img id="cover-photo-preview" class="cover-preview" style="display: none; max-width: 100%; max-height: 200px;">
+                    </div>
+                    <input id="bulk-cover-photo" type="hidden">
                 </div>
                 <div class="form-row form-button-row">
                     <label></label>

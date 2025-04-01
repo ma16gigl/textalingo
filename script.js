@@ -16,8 +16,8 @@ let adminMessageCount = 1;
 let editMessageCount = 0;
 let currentStoryId = null;
 let instructionState = 0;
-let currentSeriesTitle = null; // Tracks the series being generated
-let currentEpisodeNumber = 0; // Tracks the episode count
+let currentSeriesTitle = null;
+let currentEpisodeNumber = 0;
 
 const initialSplashScreen = document.getElementById("initial-splash");
 const languageSplashScreen = document.getElementById("language-splash");
@@ -39,6 +39,11 @@ const languageIcon = document.getElementById("language-icon");
 const languageDropdown = document.getElementById("language-dropdown");
 const languageMenu = document.getElementById("language-menu");
 const getStartedBtn = document.getElementById("get-started-btn");
+const dropZone = document.getElementById("drop-zone");
+const coverPhotoInput = document.getElementById("cover-photo-input");
+const coverPhotoPreview = document.getElementById("cover-photo-preview");
+const bulkCoverPhoto = document.getElementById("bulk-cover-photo");
+let selectedFile = null;
 
 const rtlLanguages = ['hebrew'];
 
@@ -262,6 +267,7 @@ async function loadHomeScreen(clearTiles = false) {
 
     await updateDropdown();
 }
+
 async function showCategoryStories(category) {
     const categoryScreen = document.createElement("div");
     categoryScreen.id = "category-screen";
@@ -359,7 +365,7 @@ async function loadProfile() {
         .eq('user_id', user.id)
         .single();
 
-    if (subError && subError.code !== 'PGRST116') { // PGRST116 means no row, which is okay
+    if (subError && subError.code !== 'PGRST116') {
         console.error("Error fetching subscription:", subError.message, "Code:", subError.code);
         profileInfoDiv.innerHTML = `
             <p>Email: ${user.email}</p>
@@ -625,7 +631,6 @@ async function updateDropdown() {
     } else {
         console.log("User logged in - Email:", user.email, "ID:", user.id);
 
-        // Hardcode admin access for your user ID
         const ADMIN_USER_ID = 'b88bb10f-064d-412d-a03f-83d7b1282c11';
         isAdmin = user.id === ADMIN_USER_ID;
         console.log("Hardcoded admin check - User ID:", user.id, "Matches", ADMIN_USER_ID, "?", isAdmin);
@@ -703,6 +708,7 @@ document.addEventListener("click", (e) => {
         languageDropdown.classList.add("hidden");
     }
 });
+
 wordsBtn.addEventListener("click", showWordsModal);
 
 getStartedBtn.addEventListener("click", () => {
@@ -728,11 +734,13 @@ fontSizeBtn.addEventListener("click", () => {
     fontSizeIndex = (fontSizeIndex + 1) % fontSizes.length;
     updateFontSize();
 });
+
 function toggleEpisodeField() {
     const category = document.getElementById("bulk-story-category").value;
     const episodeRow = document.getElementById("episode-row");
     episodeRow.style.display = category === "Series" ? "flex" : "none";
 }
+
 async function loadSeriesOptions() {
     const language = document.getElementById("bulk-story-language").value;
     const seriesSelect = document.getElementById("bulk-series-select");
@@ -766,6 +774,7 @@ async function loadSeriesOptions() {
         });
     }
 }
+
 function selectExistingSeries() {
     const selectedSeries = document.getElementById("bulk-series-select").value;
     if (selectedSeries) {
@@ -775,7 +784,6 @@ function selectExistingSeries() {
         document.getElementById("bulk-story-text").value = "";
         currentSeriesTitle = selectedSeries;
 
-        // Fetch the highest episode number for this series
         supabase
             .from('stories')
             .select('title')
@@ -801,59 +809,6 @@ function selectExistingSeries() {
             });
     }
 }
-
-document.getElementById("add-story-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const language = document.getElementById("admin-language").value;
-    const title = document.getElementById("admin-title").value;
-    const isNew = document.getElementById("admin-is-new").value === "1";
-    const popularNow = document.getElementById("admin-popular-now").value === "1";
-    const premium = document.getElementById("admin-premium").value === "1";
-    const category = document.getElementById("admin-category").value || null;
-    const coverPhoto = document.getElementById("admin-cover-photo").value || null;
-    const messages = [];
-    for (let i = 0; i < adminMessageCount; i++) {
-        messages.push({
-            text: document.getElementById(`message-${i}-text`).value,
-            sender: document.getElementById(`message-${i}-sender`).value,
-            delay: Number(document.getElementById(`message-${i}-delay`).value)
-        });
-    }
-    console.log("Adding story with data:", { language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
-    const { data: story, error: storyError } = await supabase
-        .from('stories')
-        .insert({ language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto })
-        .select()
-        .single();
-    if (storyError) {
-        console.error("Error adding story:", storyError);
-        alert("Failed to add story: " + storyError.message);
-        return;
-    }
-    const storyId = story.id;
-    const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
-    if (messageError) {
-        console.error("Error adding messages:", messageError.message);
-        alert("Failed to add messages: " + messageError.message);
-        return;
-    }
-    alert("Story added!");
-    document.getElementById("add-story-form").reset();
-    adminMessageCount = 1;
-    document.getElementById("admin-messages").innerHTML = `
-        <label>Message 1 Text:</label>
-        <textarea id="message-0-text" required></textarea>
-        <label>Sender:</label>
-        <select id="message-0-sender">
-            <option value="received">Received</option>
-            <option value="sent">Sent</option>
-        </select>
-        <label>Delay (ms):</label>
-        <input id="message-0-delay" type="number" value="2000">
-    `;
-});
-
-
 
 async function generateStory() {
     const language = document.getElementById("bulk-story-language").value;
@@ -888,7 +843,7 @@ async function generateStory() {
             currentSeriesTitle = title;
             currentEpisodeNumber = episode;
             document.getElementById("generate-next-episode-btn").disabled = false;
-            document.getElementById("bulk-story-episode").value = episode + 1; // Auto-increment for next episode
+            document.getElementById("bulk-story-episode").value = episode + 1;
         }
     } catch (error) {
         console.error("Error generating story:", error);
@@ -933,7 +888,7 @@ async function generateNextEpisode() {
         const storyText = data.story;
         document.getElementById("bulk-story-text").value = storyText;
         alert(`Episode ${currentEpisodeNumber} of "${title}" generated successfully!`);
-        document.getElementById("bulk-story-episode").value = currentEpisodeNumber + 1; // Auto-increment
+        document.getElementById("bulk-story-episode").value = currentEpisodeNumber + 1;
     } catch (error) {
         console.error("Error generating next episode:", error);
         alert("Failed to generate next episode: " + error.message);
@@ -962,7 +917,6 @@ async function addEpisode() {
     if (currentSeriesTitle && (currentSeriesTitle === baseTitle || baseTitle.startsWith(currentSeriesTitle))) {
         episodeNum = currentEpisodeNumber + 1;
     } else {
-        // If no current series or switching to a new one, check for existing episodes
         currentSeriesTitle = baseTitle;
         const { data, error } = await supabase
             .from('stories')
@@ -988,7 +942,7 @@ async function addEpisode() {
     }
 
     document.getElementById("bulk-story-title").value = `${baseTitle} Episode ${episodeNum}`;
-    document.getElementById("bulk-story-text").value = ""; // Clear previous text
+    document.getElementById("bulk-story-text").value = "";
     document.getElementById("bulk-story-episode").value = episodeNum;
     document.getElementById("generate-next-episode-btn").disabled = false;
     currentEpisodeNumber = episodeNum;
@@ -1025,7 +979,7 @@ async function generateCoverPhoto() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` // Use environment variable
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
             },
             body: JSON.stringify(payload)
         });
@@ -1071,6 +1025,44 @@ async function generateCoverPhoto() {
     }
 }
 
+dropZone.addEventListener("click", () => coverPhotoInput.click());
+
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+        handleFile(file);
+    }
+});
+
+coverPhotoInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        handleFile(file);
+    }
+});
+
+function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        coverPhotoPreview.src = e.target.result;
+        coverPhotoPreview.style.display = "block";
+        dropZone.querySelector("p").style.display = "none";
+    };
+    reader.readAsDataURL(file);
+}
+
 document.getElementById("bulk-story-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     console.log("Bulk story form submitted");
@@ -1081,7 +1073,7 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
     const popularNow = document.getElementById("bulk-popular-now").value === "1";
     const premium = document.getElementById("bulk-premium").value === "1";
     const category = document.getElementById("bulk-story-category").value || null;
-    const coverPhoto = document.getElementById("bulk-cover-photo").value || null;
+    let coverPhoto = bulkCoverPhoto.value || null;
     const delay = Number(document.getElementById("bulk-story-delay").value);
     const text = document.getElementById("bulk-story-text").value.trim();
 
@@ -1097,7 +1089,26 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
         return;
     }
 
-    console.log("Form data:", { language, title, isNew, popularNow, premium, category, coverPhoto, delay, text });
+    if (selectedFile) {
+        const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('cover-photos')
+            .upload(fileName, selectedFile, {
+                contentType: selectedFile.type
+            });
+
+        if (uploadError) {
+            console.error("Error uploading image:", uploadError.message);
+            alert("Failed to upload cover photo: " + uploadError.message);
+            return;
+        }
+
+        const { data: urlData } = supabase.storage
+            .from('cover-photos')
+            .getPublicUrl(fileName);
+        coverPhoto = urlData.publicUrl;
+        bulkCoverPhoto.value = coverPhoto;
+    }
 
     const lines = text.split('\n').map(line => line.trim()).filter(line => line);
     const messages = [];
@@ -1107,17 +1118,14 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
         lines.forEach((line, index) => {
             const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
             if (!match) {
-                console.error(`Invalid format in line ${index + 1}: "${line}"`);
                 throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "foreign sentence (English translation) received or sent".`);
             }
 
             const [_, foreignText, englishTranslation, sender] = match;
             if (!foreignText || !englishTranslation || !sender) {
-                console.error(`Missing data in line ${index + 1}: "${line}"`);
                 throw new Error(`Missing data in line ${index + 1}: "${line}". All fields are required.`);
             }
             if (!['received', 'sent'].includes(sender.toLowerCase())) {
-                console.error(`Invalid sender in line ${index + 1}: "${line}"`);
                 throw new Error(`Invalid sender in line ${index + 1}: "${line}". Expected "received" or "sent".`);
             }
 
@@ -1125,37 +1133,27 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
             translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
         });
 
-        console.log("Parsed messages:", messages);
-        console.log("Parsed translations:", translationsData);
-
-        console.log("Inserting story into Supabase...");
         const { data: story, error: storyError } = await supabase
             .from('stories')
             .insert([{ language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto, created_at: new Date().toISOString() }])
             .select()
             .single();
         if (storyError) {
-            console.error("Story insertion error:", storyError);
             throw new Error(`Failed to add story: ${storyError.message}`);
         }
         const storyId = story.id;
-        console.log("Story inserted with ID:", storyId);
 
-        console.log("Inserting messages into Supabase...");
         const { error: messageError } = await supabase
             .from('messages')
             .insert(messages.map(msg => ({ story_id: storyId, text: msg.text, sender: msg.sender, delay: msg.delay })));
         if (messageError) {
-            console.error("Message insertion error:", messageError);
             throw new Error(`Failed to add messages: ${messageError.message}`);
         }
 
-        console.log("Inserting translations into Supabase...");
         const { error: translationError } = await supabase
             .from('message_translations')
             .insert(translationsData);
         if (translationError) {
-            console.error("Translation insertion error:", translationError);
             throw new Error(`Failed to add translations: ${translationError.message}`);
         }
 
@@ -1163,22 +1161,20 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
             translationsData.forEach(({ message_text, translation }) => {
                 translations[message_text] = translation;
             });
-            console.log("Updated local translations:", translations);
         }
 
-        console.log("Story successfully saved!");
         alert(`Added story "${title}" with ${messages.length} messages and translations successfully!`);
         
         document.getElementById("bulk-story-text").value = "";
         document.getElementById("bulk-story-title").value = "";
-        document.getElementById("bulk-cover-photo").value = "";
+        bulkCoverPhoto.value = "";
+        selectedFile = null;
+        coverPhotoPreview.style.display = "none";
+        dropZone.querySelector("p").style.display = "block";
 
         hideAdmin();
         if (currentLanguage === language) {
-            console.log("Reloading home screen for language:", language);
             loadHomeScreen(true);
-        } else {
-            console.log("Language mismatch - not reloading home screen. Current:", currentLanguage, "Story:", language);
         }
     } catch (error) {
         console.error("Submission error:", error);
@@ -1208,7 +1204,6 @@ async function loadStoryList() {
         return;
     }
 
-    // Group series by title prefix (assuming episodes are titled like "Series Name Ep 1")
     const seriesGroups = {};
     const nonSeriesStories = [];
     stories.forEach(story => {
@@ -1222,7 +1217,6 @@ async function loadStoryList() {
         }
     });
 
-    // Render series groups
     for (const [seriesTitle, episodes] of Object.entries(seriesGroups)) {
         const groupDiv = document.createElement("div");
         groupDiv.classList.add("series-group");
@@ -1251,7 +1245,6 @@ async function loadStoryList() {
         storyList.appendChild(groupDiv);
     }
 
-    // Render non-series stories
     nonSeriesStories.forEach(story => {
         const item = document.createElement("div");
         item.classList.add("story-item");
@@ -1266,6 +1259,7 @@ async function loadStoryList() {
     });
     console.log("Story list populated with", stories.length, "stories");
 }
+
 async function deleteStory(storyId) {
     if (!confirm("Are you sure you want to delete this story? This action cannot be undone.")) {
         return;
@@ -1493,7 +1487,7 @@ async function handlePaymentSuccess(sessionId) {
         window.location.href = "/";
     } catch (error) {
         console.error("Error in handlePaymentSuccess:", error);
-        window.location.href = "/"; // Redirect anyway as fallback
+        window.location.href = "/";
     }
 }
 
@@ -1536,7 +1530,7 @@ async function cancelSubscription() {
         const result = await response.json();
         console.log("Cancellation result:", result);
         alert("Your subscription has been canceled. You’ll retain access until the end of your current billing period.");
-        loadProfile(); // Refresh profile display
+        loadProfile();
     } catch (error) {
         console.error("Error canceling subscription:", error);
         alert("Failed to cancel subscription. Please try again or contact support.");

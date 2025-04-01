@@ -263,7 +263,7 @@ textarea {
 .story-tile.series {
     position: relative;
     transform-style: preserve-3d;
-    overflow: visible; /* Allow pseudo-elements to show outside the tile */
+    overflow: visible;
 }
 
 .story-tile.series::before,
@@ -274,25 +274,25 @@ textarea {
     left: 0;
     width: 100%;
     height: 100%;
-    background: inherit; /* Match the tile's background */
+    background: inherit;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    z-index: -1; /* Behind the main tile */
+    z-index: -1;
 }
 
 .story-tile.series::before {
-    transform: translate(-5px, -5px); /* Slightly offset to the left/top */
+    transform: translate(-5px, -5px);
     opacity: 0.8;
 }
 
 .story-tile.series::after {
-    transform: translate(-10px, -10px); /* Further offset for depth */
+    transform: translate(-10px, -10px);
     opacity: 0.6;
 }
 
 .story-tile.series .title {
-    background: rgba(0, 0, 0, 0.8); /* Darker to stand out */
-    font-size: clamp(1.2rem, 2.5vw, 1.4rem); /* Slightly larger for emphasis */
+    background: rgba(0, 0, 0, 0.8);
+    font-size: clamp(1.2rem, 2.5vw, 1.4rem);
 }
 
 .story-tile img {
@@ -513,15 +513,15 @@ html[lang="he"] .back-container,
 
 /* Admin Panel */
 .scrollable {
-    width: 90%; /* Widened from 100% with max-width */
-    max-width: 1400px; /* Increased from 1200px for a wider canvas */
-    max-height: 85vh; /* Slightly more vertical space */
+    width: 90%;
+    max-width: 1400px;
+    max-height: 85vh;
     overflow-y: auto;
     padding: 2rem;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin: 0 auto 1rem auto; /* Centered with bottom margin */
+    margin: 0 auto 1rem auto;
 }
 
 #admin-messages div, #edit-messages div {
@@ -548,7 +548,7 @@ html[lang="he"] .back-container,
 }
 
 .story-item span {
-    font-size: clamp(1rem, 2vw, 1.2rem); /* Adjusted for better readability */
+    font-size: clamp(1rem, 2vw, 1.2rem);
 }
 
 .story-item button {
@@ -568,7 +568,6 @@ html[lang="he"] .back-container,
 .story-item button.delete-btn:hover {
     background-color: #d32f2f;
 }
-
 
 /* Story Screen Layout */
 #story-screen {
@@ -714,25 +713,25 @@ html[lang="he"] .back-container,
 /* Admin Form Styling */
 .admin-form {
     width: 100%;
-    max-width: 1200px; /* Increased from 1000px for wider forms */
-    padding: 2rem; /* Increased padding for comfort */
+    max-width: 1200px;
+    padding: 2rem;
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin: 0 auto; /* Centered */
+    margin: 0 auto;
 }
 
 .form-row {
     display: flex;
     align-items: center;
-    margin-bottom: 1.5rem; /* Increased spacing */
-    gap: 1.5rem; /* Increased gap for better separation */
+    margin-bottom: 1.5rem;
+    gap: 1.5rem;
 }
 
 .form-row label {
-    flex: 0 0 250px; /* Widened from 200px for better label visibility */
+    flex: 0 0 250px;
     font-weight: bold;
-    font-size: 1.2rem; /* Slightly larger for readability */
+    font-size: 1.2rem;
     color: #333;
     text-align: right;
 }
@@ -742,7 +741,7 @@ html[lang="he"] .back-container,
 .form-row textarea {
     flex: 1;
     padding: 0.75rem;
-    font-size: 1.1rem; /* Slightly larger text */
+    font-size: 1.1rem;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
@@ -752,20 +751,20 @@ html[lang="he"] .back-container,
 }
 
 .form-row textarea {
-    min-height: 250px; /* Increased height for more text visibility */
+    min-height: 250px;
     resize: vertical;
 }
 
 .form-buttons {
     display: flex;
     justify-content: flex-end;
-    gap: 1.5rem; /* Increased gap */
-    margin-top: 1.5rem; /* Increased spacing */
+    gap: 1.5rem;
+    margin-top: 1.5rem;
 }
 
 .form-buttons button {
-    padding: 0.75rem 2rem; /* Wider buttons */
-    font-size: 1.2rem; /* Larger text */
+    padding: 0.75rem 2rem;
+    font-size: 1.2rem;
     border-radius: 4px;
 }
 
@@ -786,39 +785,12 @@ html[lang="he"] .back-container,
 }
 
 .form-button-row label {
-    flex: 0 0 250px; /* Match form-row label width */
+    flex: 0 0 250px;
 }
 
 .form-button-row button {
-    padding: 0.75rem 2rem; /* Wider button */
-    font-size: 1.2rem; /* Larger text */
-    background-color: #ff9500;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.form-button-row button:hover {
-    background-color: #e87b00;
-}
-
-/* Form Button Row (for Generate Cover Photo button) */
-.form-button-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-    gap: 1rem;
-}
-
-.form-button-row label {
-    flex: 0 0 200px;
-}
-
-.form-button-row button {
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
+    padding: 0.75rem 2rem;
+    font-size: 1.2rem;
     background-color: #ff9500;
     color: white;
     border: none;
@@ -860,7 +832,7 @@ html[lang="he"] .back-container,
 }
 
 .carousel-track .story-tile.series {
-    width: 13%; /* Slightly wider to emphasize */
+    width: 13%;
     min-width: 140px;
 }
 
@@ -895,6 +867,37 @@ footer a {
     color: #888;
     text-decoration: none;
     margin: 0 10px;
+}
+
+/* Drop Zone for Cover Photo Upload */
+.drop-zone {
+    width: 100%;
+    max-width: 800px;
+    min-height: 150px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.drop-zone.dragover {
+    border-color: #007aff;
+    background-color: #f0f8ff;
+}
+
+.drop-zone p {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #666;
+}
+
+.cover-preview {
+    margin-top: 1rem;
 }
 
 /* Mobile Adjustments */
@@ -1004,7 +1007,7 @@ footer a {
         height: 30px;
     }
     .dropdown {
-        top: 40px; /* Adjusted for smaller flag on mobile */
+        top: 40px;
         width: 130px;
     }
     #home {
