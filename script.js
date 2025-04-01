@@ -253,12 +253,13 @@ async function loadHomeScreen(clearTiles = false) {
                 tile.innerHTML = `
                     <div class="card-stack">
                         <div class="card card-1"><img src="${series.episodes[0].cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${series.title}"></div>
-                        ${episodeCount > 1 ? '<div class="card card-2"></div>' : ''}
-                        ${episodeCount > 2 ? '<div class="card card-3"></div>' : ''}
+                        ${episodeCount > 1 ? `<div class="card card-2" style="background-image: url('${series.episodes[1].cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}');"></div>` : ''}
+                        ${episodeCount > 2 ? `<div class="card card-3" style="background-image: url('${series.episodes[2].cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}');"></div>` : ''}
                     </div>
                     <div class="title">${series.title} (${episodeCount} Episodes)</div>
                 `;
                 tile.addEventListener("click", () => showSeriesEpisodesFrontend(series.title, series.episodes, isPremiumUser));
+            
             } else {
                 // Non-series tile
                 const story = item;
