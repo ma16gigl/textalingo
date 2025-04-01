@@ -1265,7 +1265,7 @@ async function loadStoryList() {
         const groupDiv = document.createElement("div");
         groupDiv.classList.add("series-group");
         groupDiv.innerHTML = `
-            <button class="series-toggle" onclick="showSeriesEpisodes('${seriesTitle}', ${JSON.stringify(episodes)})">${seriesTitle} (${episodes.length} Episodes)</button>
+            <button class="series-toggle" onclick="showSeriesEpisodes('${seriesTitle}', '${JSON.stringify(episodes)}')">${seriesTitle} (${episodes.length} Episodes)</button>
         `;
         seriesListDiv.appendChild(groupDiv);
     }
@@ -1474,7 +1474,9 @@ function switchTab(tab) {
     }
 }
 
-async function showSeriesEpisodes(seriesTitle, episodes) {
+async function showSeriesEpisodes(seriesTitle, episodesJson) {
+    console.log("Showing episodes for series:", seriesTitle);
+    const episodes = JSON.parse(episodesJson); // Parse the JSON string back to array
     document.getElementById("series-list").classList.add("hidden");
     document.getElementById("series-episodes").classList.remove("hidden");
     document.getElementById("series-title").textContent = seriesTitle;
@@ -1495,6 +1497,12 @@ async function showSeriesEpisodes(seriesTitle, episodes) {
         episodeList.appendChild(episodeDiv);
     });
 
+    // Add Quick Add Episode button
+    const quickAddBtn = document.createElement("button");
+    quickAddBtn.textContent = "Quick Add Episode";
+    quickAddBtn.addEventListener("click", () => quickAddEpisode(seriesTitle));
+    episodeList.appendChild(quickAddBtn);
+
     new Sortable(episodeList, {
         animation: 150,
         handle: '.hamburger',
@@ -1506,21 +1514,92 @@ function editEpisode(storyId) {
     editStory(storyId);
 }
 
-function addNewEpisode() {
-    const seriesTitle = document.getElementById("series-title").textContent;
-    const episodeList = document.getElementById("episode-list");
-    const episodeCount = episodeList.children.length + 1;
-    const newEpisodeTitle = `${seriesTitle} Episode ${episodeCount}`;
+async function quickAddEpisode(seriesTitle) {
+    const language = document.getElementById("edit-story-language").value;
+    const episodeList = document.getElementById("episode-list").children;
+    let maxEpisode = 0;
 
-    const episodeDiv = document.createElement("div");
-    episodeDiv.classList.add("episode-item");
-    episodeDiv.dataset.id = "new-" + Date.now();
-    episodeDiv.innerHTML = `
-        <span class="hamburger">☰</span>
-        <input type="text" value="${newEpisodeTitle}" data-original="${newEpisodeTitle}">
-        <button onclick="this.parentElement.remove()">Remove</button>
-    `;
-    episodeList.appendChild(episodeDiv);
+    for (let episodeDiv of episodeList) {
+        const title = episodeDiv.querySelector("input").value;
+        const match = title.match(/Ep(?:isode)?\s*(\d+)/i);
+        if (match) {
+            const num = Number(match[1]);
+            maxEpisode = Math.max(maxEpisode, num);
+        }
+    }
+
+    const newEpisodeNum = maxEpisode + 1;
+    const newTitle = `${seriesTitle} Episode ${newEpisodeNum}`;
+
+    try {
+        const response = await fetch('/.netlify/functions/generate-story', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                language, 
+                category: "Series", 
+                title: seriesTitle, 
+                episode: newEpisodeNum 
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const storyText = data.story;
+        const lines = storyText.split('\n').map(line => line.trim()).filter(line => line);
+        const messages = [];
+        const translationsData = [];
+
+        lines.forEach((line, index) => {
+            const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
+            if (!match) {
+                throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "foreign sentence (English translation) received or sent".`);
+            }
+            const [_, foreignText, englishTranslation, sender] = match;
+            messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), delay: 2000 });
+            translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
+        });
+
+        const { data: story, error: storyError } = await supabase
+            .from('stories')
+            .insert([{ language, title: newTitle, category: "Series", created_at: new Date().toISOString() }])
+            .select()
+            .single();
+        if (storyError) {
+            throw new Error(`Failed to add episode: ${storyError.message}`);
+        }
+        const storyId = story.id;
+
+        const { error: messageError } = await supabase
+            .from('messages')
+            .insert(messages.map(msg => ({ story_id: storyId, ...msg })));
+        if (messageError) {
+            throw new Error(`Failed to add messages: ${messageError.message}`);
+        }
+
+        const { error: translationError } = await supabase
+            .from('message_translations')
+            .insert(translationsData);
+        if (translationError) {
+            throw new Error(`Failed to add translations: ${translationError.message}`);
+        }
+
+        alert(`Episode ${newEpisodeNum} of "${seriesTitle}" added successfully!`);
+        showSeriesEpisodes(seriesTitle, JSON.stringify([...episodes, { id: storyId, title: newTitle, category: "Series" }]));
+    } catch (error) {
+        console.error("Error adding episode:", error);
+        alert("Failed to add episode: " + error.message);
+    }
 }
 
 async function saveSeriesChanges() {
