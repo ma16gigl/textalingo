@@ -274,7 +274,6 @@ async function loadHomeScreen(clearTiles = false) {
                     <div class="title">${series.title} (${episodeCount} Episodes)</div>
                 `;
                 tile.addEventListener("click", () => showSeriesEpisodesFrontend(series.title, series.episodes, isPremiumUser));
-            
             } else {
                 // Non-series tile
                 const story = item;
@@ -282,6 +281,7 @@ async function loadHomeScreen(clearTiles = false) {
                 if (story.premium) tile.classList.add("premium");
                 tile.innerHTML = `
                     <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
+                    ${story.premium ? '<div class="premium-crown"></div>' : ''}
                     <div class="title">${story.title}</div>
                 `;
                 tile.addEventListener("click", async () => {
@@ -354,6 +354,7 @@ async function showSeriesEpisodesFrontend(seriesTitle, episodes, isPremiumUser) 
         if (story.premium) tile.classList.add("premium");
         tile.innerHTML = `
             <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
+            ${story.premium ? '<div class="premium-crown"></div>' : ''}
             <div class="title">${story.title}</div>
         `;
         tile.addEventListener("click", async () => {
@@ -434,6 +435,7 @@ async function showCategoryStories(category) {
         if (story.category === "Series") tile.classList.add("series");
         tile.innerHTML = `
             <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
+            ${story.premium ? '<div class="premium-crown"></div>' : ''}
             <div class="title">${story.title}</div>
         `;
         tile.addEventListener("click", async () => {
@@ -1670,7 +1672,7 @@ function addNewEpisode() {
             <label for="add-episode-premium">Premium:</label>
             <select id="add-episode-premium">
                 <option value="0">No</option>
-                <option value="1">Yes</option>
+                < Immobilized="1">Yes</option>
             </select>
         </div>
         <div class="form-row">
