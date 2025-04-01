@@ -181,13 +181,34 @@ async function loadHomeScreen(clearTiles = false) {
         return;
     }
 
-    const categories = { "Popular Now": [] };
+    // Group series episodes
+    const seriesGroups = {};
+    const nonSeriesStories = [];
     stories.forEach(story => {
+        if (story.category === "Series") {
+            const match = story.title.match(/^(.*?)(?:\s*(Ep|Episode)\s*(\d+))?$/i);
+            const seriesTitle = match ? match[1].trim() : story.title;
+            if (!seriesGroups[seriesTitle]) {
+                seriesGroups[seriesTitle] = [];
+            }
+            seriesGroups[seriesTitle].push(story);
+        } else {
+            nonSeriesStories.push(story);
+        }
+    });
+
+    const categories = { "Popular Now": [] };
+    nonSeriesStories.forEach(story => {
         const cat = story.category || "Other";
         if (!categories[cat]) categories[cat] = [];
         categories[cat].push(story);
         if (story.popular_now) categories["Popular Now"].push(story);
     });
+
+    // Add series as a single grouped entry under "Series" category
+    if (Object.keys(seriesGroups).length > 0) {
+        categories["Series"] = Object.entries(seriesGroups).map(([title, episodes]) => ({ title, episodes }));
+    }
 
     console.log("Categories populated:", categories);
 
@@ -220,32 +241,50 @@ async function loadHomeScreen(clearTiles = false) {
         const track = document.createElement("div");
         track.classList.add("carousel-track");
 
-        catStories.forEach(story => {
+        catStories.forEach(item => {
             const tile = document.createElement("div");
             tile.classList.add("story-tile");
-            if (story.is_new) tile.classList.add("new");
-            if (story.premium) tile.classList.add("premium");
-            if (story.category === "Series") tile.classList.add("series");
-            tile.innerHTML = `
-                <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
-                <div class="title">${story.title}</div>
-            `;
-            tile.addEventListener("click", async () => {
-                if (story.premium && !isPremiumUser) {
-                    window.location.href = "getpremium.html";
-                    return;
-                }
-                const { data } = await supabase.from('messages').select('*').eq('story_id', story.id);
-                currentStory = data;
-                currentStoryId = story.id;
-                messageIndex = 0;
-                messagesDiv.innerHTML = "";
-                homeScreen.classList.add("hidden");
-                storyScreen.classList.remove("hidden");
-                instructionState = localStorage.getItem("hasSeenStoryInstructions") ? 0 : 1;
-                showNextMessage();
-                if (instructionState === 1) showInstruction();
-            });
+
+            if (category === "Series") {
+                // Series tile with stacked effect
+                const series = item;
+                const episodeCount = series.episodes.length;
+                tile.classList.add("series-deck");
+                tile.innerHTML = `
+                    <div class="card-stack">
+                        <div class="card card-1"><img src="${series.episodes[0].cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${series.title}"></div>
+                        ${episodeCount > 1 ? '<div class="card card-2"></div>' : ''}
+                        ${episodeCount > 2 ? '<div class="card card-3"></div>' : ''}
+                    </div>
+                    <div class="title">${series.title} (${episodeCount} Episodes)</div>
+                `;
+                tile.addEventListener("click", () => showSeriesEpisodesFrontend(series.title, series.episodes, isPremiumUser));
+            } else {
+                // Non-series tile
+                const story = item;
+                if (story.is_new) tile.classList.add("new");
+                if (story.premium) tile.classList.add("premium");
+                tile.innerHTML = `
+                    <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
+                    <div class="title">${story.title}</div>
+                `;
+                tile.addEventListener("click", async () => {
+                    if (story.premium && !isPremiumUser) {
+                        window.location.href = "getpremium.html";
+                        return;
+                    }
+                    const { data } = await supabase.from('messages').select('*').eq('story_id', story.id);
+                    currentStory = data;
+                    currentStoryId = story.id;
+                    messageIndex = 0;
+                    messagesDiv.innerHTML = "";
+                    homeScreen.classList.add("hidden");
+                    storyScreen.classList.remove("hidden");
+                    instructionState = localStorage.getItem("hasSeenStoryInstructions") ? 0 : 1;
+                    showNextMessage();
+                    if (instructionState === 1) showInstruction();
+                });
+            }
             track.appendChild(tile);
         });
 
@@ -268,6 +307,57 @@ async function loadHomeScreen(clearTiles = false) {
     if (loadMoreBtn) loadMoreBtn.style.display = hasMoreStories ? "block" : "none";
 
     await updateDropdown();
+}
+
+async function showSeriesEpisodesFrontend(seriesTitle, episodes, isPremiumUser) {
+    const seriesScreen = document.createElement("div");
+    seriesScreen.id = "series-screen";
+    seriesScreen.classList.add("screen");
+    seriesScreen.innerHTML = `
+        <button id="series-back-btn">Back</button>
+        <h1>${seriesTitle} (${episodes.length} Episodes)</h1>
+        <div id="series-episodes-tiles" class="story-tiles-grid"></div>
+    `;
+    document.body.appendChild(seriesScreen);
+
+    homeScreen.classList.add("hidden");
+    seriesScreen.classList.remove("hidden");
+
+    const backBtn = seriesScreen.querySelector("#series-back-btn");
+    backBtn.addEventListener("click", () => {
+        seriesScreen.remove();
+        homeScreen.classList.remove("hidden");
+    });
+
+    const tilesDiv = seriesScreen.querySelector("#series-episodes-tiles");
+
+    episodes.forEach(story => {
+        const tile = document.createElement("div");
+        tile.classList.add("story-tile");
+        if (story.is_new) tile.classList.add("new");
+        if (story.premium) tile.classList.add("premium");
+        tile.innerHTML = `
+            <img src="${story.cover_photo || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${story.title}">
+            <div class="title">${story.title}</div>
+        `;
+        tile.addEventListener("click", async () => {
+            if (story.premium && !isPremiumUser) {
+                window.location.href = "getpremium.html";
+                return;
+            }
+            const { data } = await supabase.from('messages').select('*').eq('story_id', story.id);
+            currentStory = data;
+            currentStoryId = story.id;
+            messageIndex = 0;
+            messagesDiv.innerHTML = "";
+            seriesScreen.classList.add("hidden");
+            storyScreen.classList.remove("hidden");
+            instructionState = localStorage.getItem("hasSeenStoryInstructions") ? 0 : 1;
+            showNextMessage();
+            if (instructionState === 1) showInstruction();
+        });
+        tilesDiv.appendChild(tile);
+    });
 }
 
 async function showCategoryStories(category) {
@@ -1827,129 +1917,129 @@ async function saveSeriesChanges() {
 
         if (storyId.startsWith("new-")) {
             const { data: story, error: storyError } = await supabase
-            .from('stories')
-            .insert([{ language, title: newTitle, category: "Series" }])
-            .select()
-            .single();
-        if (storyError) {
-            console.error("Error adding new episode:", storyError.message);
-            alert("Failed to add new episode: " + storyError.message);
-            return;
+                .from('stories')
+                .insert([{ language, title: newTitle, category: "Series" }])
+                .select()
+                .single();
+            if (storyError) {
+                console.error("Error adding new episode:", storyError.message);
+                alert("Failed to add new episode: " + storyError.message);
+                return;
+            }
+            episodeDiv.dataset.id = story.id;
+        } else if (newTitle !== originalTitle) {
+            const { error: storyError } = await supabase
+                .from('stories')
+                .update({ title: newTitle })
+                .eq('id', storyId);
+            if (storyError) {
+                console.error("Error updating episode:", storyError.message);
+                alert("Failed to update episode: " + storyError.message);
+                return;
+            }
+            episodeDiv.querySelector("input").dataset.original = newTitle;
         }
-        episodeDiv.dataset.id = story.id;
-    } else if (newTitle !== originalTitle) {
-        const { error: storyError } = await supabase
-            .from('stories')
-            .update({ title: newTitle })
-            .eq('id', storyId);
-        if (storyError) {
-            console.error("Error updating episode:", storyError.message);
-            alert("Failed to update episode: " + storyError.message);
-            return;
-        }
-        episodeDiv.querySelector("input").dataset.original = newTitle;
     }
-}
-alert("Series changes saved successfully!");
-backToSeriesList();
+    alert("Series changes saved successfully!");
+    backToSeriesList();
 }
 
 function backToSeriesList() {
-document.getElementById("series-episodes").classList.add("hidden");
-document.getElementById("series-list").classList.remove("hidden");
-loadStoryList();
+    document.getElementById("series-episodes").classList.add("hidden");
+    document.getElementById("series-list").classList.remove("hidden");
+    loadStoryList();
 }
 
 function toggleFavorite(word, translation) {
-const key = `${currentLanguage}_favorites`;
-let favorites = JSON.parse(localStorage.getItem(key)) || [];
-const index = favorites.findIndex(item => item.word === word);
-if (index === -1) {
-    favorites.push({ word, translation });
-} else {
-    favorites.splice(index, 1);
-}
-localStorage.setItem(key, JSON.stringify(favorites));
+    const key = `${currentLanguage}_favorites`;
+    let favorites = JSON.parse(localStorage.getItem(key)) || [];
+    const index = favorites.findIndex(item => item.word === word);
+    if (index === -1) {
+        favorites.push({ word, translation });
+    } else {
+        favorites.splice(index, 1);
+    }
+    localStorage.setItem(key, JSON.stringify(favorites));
 }
 
 function checkFavorite(word) {
-const key = `${currentLanguage}_favorites`;
-const favorites = JSON.parse(localStorage.getItem(key)) || [];
-return favorites.some(item => item.word === word);
+    const key = `${currentLanguage}_favorites`;
+    const favorites = JSON.parse(localStorage.getItem(key)) || [];
+    return favorites.some(item => item.word === word);
 }
 
 async function loadFavoriteWords() {
-const key = `${currentLanguage}_favorites`;
-const favorites = JSON.parse(localStorage.getItem(key)) || [];
-favoriteWordsDiv.innerHTML = "";
+    const key = `${currentLanguage}_favorites`;
+    const favorites = JSON.parse(localStorage.getItem(key)) || [];
+    favoriteWordsDiv.innerHTML = "";
 
-if (favorites.length === 0) {
-    favoriteWordsDiv.innerHTML = "<p>No favorite words saved yet.</p>";
-    return;
-}
+    if (favorites.length === 0) {
+        favoriteWordsDiv.innerHTML = "<p>No favorite words saved yet.</p>";
+        return;
+    }
 
-favorites.forEach(item => {
-    const wordDiv = document.createElement("div");
-    wordDiv.classList.add("favorite-word");
-    wordDiv.innerHTML = `
-        <span>${item.word} - ${item.translation}</span>
-        <button onclick="toggleFavorite('${item.word}', '${item.translation}'); loadFavoriteWords();">Remove</button>
-    `;
-    favoriteWordsDiv.appendChild(wordDiv);
-});
+    favorites.forEach(item => {
+        const wordDiv = document.createElement("div");
+        wordDiv.classList.add("favorite-word");
+        wordDiv.innerHTML = `
+            <span>${item.word} - ${item.translation}</span>
+            <button onclick="toggleFavorite('${item.word}', '${item.translation}'); loadFavoriteWords();">Remove</button>
+        `;
+        favoriteWordsDiv.appendChild(wordDiv);
+    });
 }
 
 async function cancelSubscription() {
-const { data: userData } = await supabase.auth.getUser();
-const userId = userData.user.id;
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user.id;
 
-const { data: subData, error: subError } = await supabase
-    .from('user_subscriptions')
-    .select('stripe_sub_id')
-    .eq('user_id', userId)
-    .single();
-
-if (subError || !subData) {
-    console.error("Error fetching subscription:", subError?.message);
-    alert("Failed to load subscription data.");
-    return;
-}
-
-const stripeSubId = subData.stripe_sub_id;
-
-try {
-    const response = await fetch('/.netlify/functions/cancel-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: stripeSubId })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server error: ${errorText}`);
-    }
-
-    const result = await response.json();
-    if (result.error) {
-        throw new Error(result.error);
-    }
-
-    await supabase
+    const { data: subData, error: subError } = await supabase
         .from('user_subscriptions')
-        .update({ status: 'canceled', updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
+        .select('stripe_sub_id')
+        .eq('user_id', userId)
+        .single();
 
-    alert("Subscription canceled successfully!");
-    loadProfile();
-} catch (error) {
-    console.error("Error canceling subscription:", error);
-    alert("Failed to cancel subscription: " + error.message);
-}
+    if (subError || !subData) {
+        console.error("Error fetching subscription:", subError?.message);
+        alert("Failed to load subscription data.");
+        return;
+    }
+
+    const stripeSubId = subData.stripe_sub_id;
+
+    try {
+        const response = await fetch('/.netlify/functions/cancel-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscriptionId: stripeSubId })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error: ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (result.error) {
+            throw new Error(result.error);
+        }
+
+        await supabase
+            .from('user_subscriptions')
+            .update({ status: 'canceled', updated_at: new Date().toISOString() })
+            .eq('user_id', userId);
+
+        alert("Subscription canceled successfully!");
+        loadProfile();
+    } catch (error) {
+        console.error("Error canceling subscription:", error);
+        alert("Failed to cancel subscription: " + error.message);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-const addNewEpisodeBtn = document.getElementById("add-new-episode-btn");
-if (addNewEpisodeBtn) {
-    addNewEpisodeBtn.addEventListener("click", addNewEpisode);
-}
+    const addNewEpisodeBtn = document.getElementById("add-new-episode-btn");
+    if (addNewEpisodeBtn) {
+        addNewEpisodeBtn.addEventListener("click", addNewEpisode);
+    }
 });
