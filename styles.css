@@ -250,7 +250,7 @@ textarea {
     aspect-ratio: 2 / 3;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1); /* Updated for 3D/shadow effect */
     cursor: pointer;
     transition: transform 0.2s;
 }
@@ -917,26 +917,18 @@ html[lang="he"] .back-container,
 /* Carousel Story Tile Styling */
 .carousel-track .story-tile {
     flex: 0 0 auto;
-    width: 10%;
-    min-width: 110px;
+    width: 11%; /* Increased from 10% */
+    min-width: 120px; /* Increased from 110px */
     aspect-ratio: 2 / 3;
     scroll-snap-align: start;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1); /* Updated for 3D/shadow effect */
 }
 
 /* Adjusted width for series-deck in carousel */
 .carousel-track .story-tile.series-deck {
     width: 12%;
     min-width: 130px;
-}
-
-.carousel-track .story-tile .title {
-    padding: 5px;
-    font-size: 1rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 /* Hide Scrollbar for Clean Look */
@@ -1082,8 +1074,8 @@ footer a {
         gap: 20px;
     }
     .carousel-track .story-tile {
-        width: 120px;
-        min-width: 100px;
+        width: 130px; /* Increased from 120px */
+        min-width: 110px; /* Increased from 100px */
     }
     .carousel-track .story-tile.series-deck {
         width: 130px;
