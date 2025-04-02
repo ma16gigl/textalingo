@@ -537,11 +537,47 @@ storyScreen.addEventListener("click", (e) => {
             if (instructionDiv) storyScreen.removeChild(instructionDiv);
             localStorage.setItem("hasSeenStoryInstructions", "true");
             showNextMessage();
-        } else {
+        } else if (messageIndex < currentStory.length) {
             showNextMessage();
+        } else {
+            // Story is complete, trigger fireworks and completion
+            triggerStoryComplete();
         }
     }
 });
+
+// New function to handle story completion
+function triggerStoryComplete() {
+    // Check if already completed to avoid multiple triggers
+    if (document.querySelector(".fireworks-container")) return;
+
+    // Create fireworks container
+    const fireworksContainer = document.createElement("div");
+    fireworksContainer.className = "fireworks-container";
+    for (let i = 0; i < 10; i++) {
+        const firework = document.createElement("div");
+        firework.className = "firework";
+        fireworksContainer.appendChild(firework);
+    }
+    storyScreen.appendChild(fireworksContainer);
+
+    // Vibrate the phone (if supported)
+    if ("vibrate" in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200]); // Pattern: 200ms on, 100ms off, etc.
+    }
+
+    // Show "Story Completed" message
+    const completeMessage = document.createElement("div");
+    completeMessage.className = "story-complete-message";
+    completeMessage.textContent = "Story Completed!";
+    storyScreen.appendChild(completeMessage);
+
+    // Clean up after animation
+    setTimeout(() => {
+        fireworksContainer.remove();
+        completeMessage.remove();
+    }, 3000); // Matches animation duration
+}
 
 function showNextMessage() {
     if (!currentStory || currentStory.length === 0) {
