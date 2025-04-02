@@ -552,15 +552,15 @@ function showNextMessage() {
     if (messageIndex < currentStory.length) {
         const msg = currentStory[messageIndex];
         console.log("Displaying message:", msg);
-        addMessage(msg.text, msg.sender);
+        addMessage(msg.text, msg.sender, msg.first_name);
         messageIndex++;
     } else {
         console.log("Story completed for storyId:", currentStoryId);
     }
 }
 
-function addMessage(text, sender) {
-    console.log("Adding message - Text:", text, "Sender:", sender);
+function addMessage(text, sender, firstName) {
+    console.log("Adding message - Text:", text, "Sender:", sender, "First Name:", firstName);
     const msgDiv = document.createElement("div");
     msgDiv.classList.add("message", sender);
     if (rtlLanguages.includes(currentLanguage)) {
@@ -568,6 +568,7 @@ function addMessage(text, sender) {
     }
     const translation = translations[text.toLowerCase()] || "Translation not available";
     msgDiv.innerHTML = `
+        <div class="sender-name">${firstName || "Unknown"}</div>
         <div class="flip-container">
             <div class="front-container ${sender}">${text}</div>
             <div class="back-container ${sender}">${translation}</div>
@@ -1200,9 +1201,7 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
         const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('cover-photos')
-            .upload(fileName, selectedFile, {
-                contentType: selectedFile.type
-            });
+            .upload(fileName, selectedFile, { contentType: selectedFile.type });
 
         if (uploadError) {
             console.error("Error uploading image:", uploadError.message);
@@ -1210,9 +1209,7 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
             return;
         }
 
-        const { data: urlData } = supabase.storage
-            .from('cover-photos')
-            .getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
         coverPhoto = urlData.publicUrl;
         bulkCoverPhoto.value = coverPhoto;
     }
@@ -1223,21 +1220,22 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
 
     try {
         lines.forEach((line, index) => {
-            const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
-            if (!match) {
-                throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "foreign sentence (English translation) received or sent".`);
+            const parts = line.split(/,\s*/); // Split by comma followed by optional whitespace
+            if (parts.length !== 4) {
+                throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "Name, Foreign text, English text, sent or received"`);
+            }
+            const [name, foreignText, englishTextWithParens, sender] = parts;
+            const englishMatch = englishTextWithParens.match(/^(.*)\s*\((.*)\)$/);
+            let englishText = englishTextWithParens;
+            if (englishMatch) {
+                englishText = englishMatch[2]; // Extract text inside parentheses as English translation
+            }
+            if (!name || !foreignText || !englishText || !['received', 'sent'].includes(sender.toLowerCase())) {
+                throw new Error(`Invalid data in line ${index + 1}: "${line}". All fields (Name, Foreign text, English text, sent/received) are required.`);
             }
 
-            const [_, foreignText, englishTranslation, sender] = match;
-            if (!foreignText || !englishTranslation || !sender) {
-                throw new Error(`Missing data in line ${index + 1}: "${line}". All fields are required.`);
-            }
-            if (!['received', 'sent'].includes(sender.toLowerCase())) {
-                throw new Error(`Invalid sender in line ${index + 1}: "${line}". Expected "received" or "sent".`);
-            }
-
-            messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), delay });
-            translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
+            messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), first_name: name.trim(), delay });
+            translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishText.trim() });
         });
 
         const { data: story, error: storyError } = await supabase
@@ -1252,7 +1250,7 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
 
         const { error: messageError } = await supabase
             .from('messages')
-            .insert(messages.map(msg => ({ story_id: storyId, text: msg.text, sender: msg.sender, delay: msg.delay })));
+            .insert(messages.map(msg => ({ story_id: storyId, text: msg.text, sender: msg.sender, first_name: msg.first_name, delay: msg.delay })));
         if (messageError) {
             throw new Error(`Failed to add messages: ${messageError.message}`);
         }
@@ -1428,7 +1426,6 @@ async function editStory(storyId) {
     const form = document.getElementById("edit-story-form");
     form.classList.remove("hidden");
 
-    // Set form fields with fallback to existing story values
     const storyIdInput = document.getElementById("edit-story-id");
     const languageSelect = document.getElementById("edit-language");
     const titleInput = document.getElementById("edit-story-title");
@@ -1445,7 +1442,6 @@ async function editStory(storyId) {
     if (premiumSelect) premiumSelect.value = story.premium ? "1" : "0";
     if (categorySelect) categorySelect.value = story.category || "";
 
-    // Replace the text input with a drop zone
     const coverPhotoRow = form.querySelector('.form-row:nth-child(8)');
     coverPhotoRow.innerHTML = `
         <label for="edit-cover-photo">Cover Photo:</label>
@@ -1459,12 +1455,14 @@ async function editStory(storyId) {
 
     const messagesDiv = document.getElementById("edit-messages");
     messagesDiv.innerHTML = "";
-    editMessageCount = messages.length; // Set to actual number of messages
+    editMessageCount = messages.length;
     messages.forEach((msg, index) => {
         const translation = translationsMap[msg.text.toLowerCase()] || "";
         const msgDiv = document.createElement("div");
         msgDiv.innerHTML = `
-            <label>Message ${index + 1} Text:</label>
+            <label>Message ${index + 1} First Name:</label>
+            <input id="edit-message-${index}-name" type="text" value="${msg.first_name || ''}">
+            <label>Text:</label>
             <textarea id="edit-message-${index}-text">${msg.text}</textarea>
             <label>Translation:</label>
             <textarea id="edit-message-${index}-translation">${translation}</textarea>
@@ -1480,29 +1478,24 @@ async function editStory(storyId) {
         messagesDiv.appendChild(msgDiv);
     });
 
-    // Function to update editMessageCount
     function updateMessageCount() {
         const messageElements = messagesDiv.querySelectorAll('div');
         editMessageCount = messageElements.length;
     }
 
-    // Add event listeners for the edit drop zone
     const editDropZone = document.getElementById("edit-drop-zone");
     const editCoverPhotoInput = document.getElementById("edit-cover-photo-input");
     const editCoverPhotoPreview = document.getElementById("edit-cover-photo-preview");
     let editSelectedFile = null;
 
     editDropZone.addEventListener("click", () => editCoverPhotoInput.click());
-
     editDropZone.addEventListener("dragover", (e) => {
         e.preventDefault();
         editDropZone.classList.add("dragover");
     });
-
     editDropZone.addEventListener("dragleave", () => {
         editDropZone.classList.remove("dragover");
     });
-
     editDropZone.addEventListener("drop", (e) => {
         e.preventDefault();
         editDropZone.classList.remove("dragover");
@@ -1518,7 +1511,6 @@ async function editStory(storyId) {
             reader.readAsDataURL(file);
         }
     });
-
     editCoverPhotoInput.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -1533,11 +1525,9 @@ async function editStory(storyId) {
         }
     });
 
-    // Handle form submission
     form.onsubmit = async (e) => {
         e.preventDefault();
 
-        // Fetch elements with fallbacks to original story data
         const storyId = document.getElementById("edit-story-id")?.value || story.id;
         const language = document.getElementById("edit-language")?.value || story.language;
         const title = document.getElementById("edit-story-title")?.value || story.title;
@@ -1567,16 +1557,18 @@ async function editStory(storyId) {
         const messages = [];
         const translationsToUpdate = [];
         for (let i = 0; i < editMessageCount; i++) {
+            const nameEl = document.getElementById(`edit-message-${i}-name`);
             const textEl = document.getElementById(`edit-message-${i}-text`);
             const translationEl = document.getElementById(`edit-message-${i}-translation`);
             const senderEl = document.getElementById(`edit-message-${i}-sender`);
             const delayEl = document.getElementById(`edit-message-${i}-delay`);
-            if (textEl && senderEl && delayEl) { // Only process if core elements exist
+            if (textEl && senderEl && delayEl) {
                 const messageText = textEl.value.trim() || "";
                 messages.push({
                     text: messageText,
-                    sender: senderEl.value || "received", // Default to "received" if missing
-                    delay: Number(delayEl.value) || 2000 // Default to 2000 if missing
+                    sender: senderEl.value || "received",
+                    first_name: nameEl ? nameEl.value.trim() : "",
+                    delay: Number(delayEl.value) || 2000
                 });
                 if (translationEl && translationEl.value.trim()) {
                     translationsToUpdate.push({
@@ -1619,13 +1611,14 @@ async function editStory(storyId) {
         }
     };
 }
-
 function addEditMessage() {
     const messagesDiv = document.getElementById("edit-messages");
     const newMessage = document.createElement("div");
     newMessage.innerHTML = `
-        <label>Message ${editMessageCount + 1} Text:</label>
-        <textarea id="edit-message-${editMessageCount}-text" required></textarea>
+        <label>Message ${editMessageCount + 1} First Name:</label>
+        <input id="edit-message-${editMessageCount}-name" type="text" value="">
+        <label>Text:</label>
+        <textarea id="edit-message-${editMessageCount}-text"></textarea>
         <label>Translation:</label>
         <textarea id="edit-message-${editMessageCount}-translation"></textarea>
         <label>Sender:</label>
@@ -1635,12 +1628,11 @@ function addEditMessage() {
         </select>
         <label>Delay (ms):</label>
         <input id="edit-message-${editMessageCount}-delay" type="number" value="2000">
-        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+        <button type="button" onclick="this.parentElement.remove(); updateMessageCount();">Remove</button>
     `;
     messagesDiv.appendChild(newMessage);
     editMessageCount++;
 }
-
 document.getElementById("edit-story-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     // This is a fallback listener; the main submission logic is now in editStory
@@ -1779,7 +1771,7 @@ function addNewEpisode() {
         </div>
         <div class="form-row textarea-row">
             <label for="add-episode-text">Messages and Translations:</label>
-            <textarea id="add-episode-text" rows="10" placeholder="Format each line as: foreign sentence (English translation) sender\ne.g.\nCiao (Hello) received\nCome stai? (How are you?) sent" required></textarea>
+            <textarea id="add-episode-text" rows="10" placeholder="Format each line as: Name, Foreign text, English text, sent or received\ne.g.\nMario, Ciao, Hello, received\nLuigi, Come stai?, How are you?, sent"></textarea>
         </div>
         <div class="form-buttons">
             <button type="button" onclick="generateEpisodeStory()">Generate Story</button>
@@ -1866,11 +1858,17 @@ function addNewEpisode() {
 
         try {
             lines.forEach((line, index) => {
-                const match = line.match(/^(.*)\s*\((.*)\)\s*(received|sent)$/i);
-                if (!match) throw new Error(`Invalid format in line ${index + 1}: "${line}"`);
-                const [_, foreignText, englishTranslation, sender] = match;
-                messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), delay });
-                translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishTranslation.trim() });
+                const parts = line.split(/,\s*/);
+                if (parts.length !== 4) {
+                    throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "Name, Foreign text, English text, sent or received"`);
+                }
+                const [name, foreignText, englishText, sender] = parts;
+                if (!name || !foreignText || !englishText || !['received', 'sent'].includes(sender.toLowerCase())) {
+                    throw new Error(`Invalid data in line ${index + 1}: "${line}". All fields are required.`);
+                }
+
+                messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), first_name: name.trim(), delay });
+                translationsData.push({ language, message_text: foreignText.trim().toLowerCase(), translation: englishText.trim() });
             });
 
             const { data: story, error: storyError } = await supabase
@@ -1900,7 +1898,6 @@ function addNewEpisode() {
         }
     });
 }
-
 async function generateEpisodeStory() {
     const language = document.getElementById("add-episode-language").value;
     const title = document.getElementById("add-episode-title").value.trim();

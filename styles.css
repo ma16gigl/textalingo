@@ -265,8 +265,8 @@ textarea {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 120px; /* Tripled from 40px */
-    height: 120px; /* Tripled from 40px */
+    width: 120px;
+    height: 120px;
     background: url('https://textalingo.com/Assets/crown.png') no-repeat center;
     background-size: contain;
     z-index: 2;
@@ -513,6 +513,33 @@ html[lang="he"] .back-container,
 .message.rtl .front-container,
 .message.rtl .back-container {
     text-align: right;
+}
+
+/* Sender Name Styling */
+.sender-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.25rem;
+    text-align: left;
+}
+
+.message.received .sender-name {
+    text-align: left;
+}
+
+.message.sent .sender-name {
+    text-align: right;
+}
+
+html[lang="he"] .message.received .sender-name,
+.message.rtl.received .sender-name {
+    text-align: right;
+}
+
+html[lang="he"] .message.sent .sender-name,
+.message.rtl.sent .sender-name {
+    text-align: left;
 }
 
 /* Flip Container */
@@ -1113,7 +1140,6 @@ footer a {
     .story-tile.series-deck:hover .card-3 {
         transform: translate(12px, 12px) rotate(3deg);
     }
-    
 }
 
 /* Responsive Adjustments for Admin Form */
