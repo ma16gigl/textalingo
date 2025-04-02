@@ -119,7 +119,7 @@ async function updateUserSubscription(sessionId) {
     if (!userData.user) return;
 
     const userId = userData.user.id;
-    const response = await Germanfetch(`/.netlify/functions/verify-session?session_id=${sessionId}`);
+    const response = await fetch(`/.netlify/functions/verify-session?session_id=${sessionId}`);
     const { status, plan, subscriptionId } = await response.json();
 
     if (status === 'paid' || status === 'active') {
@@ -670,6 +670,12 @@ function showWordsModal() {
                 wordText.textContent = word;
                 const heartBtn = document.createElement("button");
                 heartBtn.innerHTML = checkFavorite(word) ? "❤️" : "🤍";
+                heartBtn.style.cssText = `
+                    background: none;
+                    border: none;
+                    font-size: 1.2rem;
+                    cursor: pointer;
+                `;
                 heartBtn.addEventListener("click", () => {
                     const translation = translations[word] || "Translation not available";
                     toggleFavorite(word, translation);
@@ -930,7 +936,12 @@ async function generateStory() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ language, category, title, episode })
+            body: JSON.stringify({ 
+                language, 
+                category, 
+                title, 
+                episode
+            })
         });
 
         if (!response.ok) {
@@ -1201,7 +1212,9 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
         const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('cover-photos')
-            .upload(fileName, selectedFile, { contentType: selectedFile.type });
+            .upload(fileName, selectedFile, {
+                contentType: selectedFile.type
+            });
 
         if (uploadError) {
             console.error("Error uploading image:", uploadError.message);
@@ -1209,7 +1222,9 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
             return;
         }
 
-        const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage
+            .from('cover-photos')
+            .getPublicUrl(fileName);
         coverPhoto = urlData.publicUrl;
         bulkCoverPhoto.value = coverPhoto;
     }
@@ -1220,18 +1235,13 @@ document.getElementById("bulk-story-form").addEventListener("submit", async (e) 
 
     try {
         lines.forEach((line, index) => {
-            const parts = line.split(/,\s*/); // Split by comma followed by optional whitespace
+            const parts = line.split(/;\s*/);
             if (parts.length !== 4) {
-                throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "Name, Foreign text, English text, sent or received"`);
+                throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "Name; Foreign text; English text; sent or received"`);
             }
-            const [name, foreignText, englishTextWithParens, sender] = parts;
-            const englishMatch = englishTextWithParens.match(/^(.*)\s*\((.*)\)$/);
-            let englishText = englishTextWithParens;
-            if (englishMatch) {
-                englishText = englishMatch[2]; // Extract text inside parentheses as English translation
-            }
+            const [name, foreignText, englishText, sender] = parts;
             if (!name || !foreignText || !englishText || !['received', 'sent'].includes(sender.toLowerCase())) {
-                throw new Error(`Invalid data in line ${index + 1}: "${line}". All fields (Name, Foreign text, English text, sent/received) are required.`);
+                throw new Error(`Invalid data in line ${index + 1}: "${line}". All fields (Name; Foreign text; English text; sent/received) are required.`);
             }
 
             messages.push({ text: foreignText.trim(), sender: sender.toLowerCase(), first_name: name.trim(), delay });
@@ -1611,6 +1621,7 @@ async function editStory(storyId) {
         }
     };
 }
+
 function addEditMessage() {
     const messagesDiv = document.getElementById("edit-messages");
     const newMessage = document.createElement("div");
@@ -1633,6 +1644,7 @@ function addEditMessage() {
     messagesDiv.appendChild(newMessage);
     editMessageCount++;
 }
+
 document.getElementById("edit-story-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     // This is a fallback listener; the main submission logic is now in editStory
@@ -1771,7 +1783,7 @@ function addNewEpisode() {
         </div>
         <div class="form-row textarea-row">
             <label for="add-episode-text">Messages and Translations:</label>
-            <textarea id="add-episode-text" rows="10" placeholder="Format each line as: Name, Foreign text, English text, sent or received\ne.g.\nMario, Ciao, Hello, received\nLuigi, Come stai?, How are you?, sent"></textarea>
+            <textarea id="add-episode-text" rows="10" placeholder="Format each line as: Name; Foreign text; English text; sent or received\ne.g.\nMario; Ciao; Hello; received\nLuigi; Come stai?; How are you?; sent"></textarea>
         </div>
         <div class="form-buttons">
             <button type="button" onclick="generateEpisodeStory()">Generate Story</button>
@@ -1858,9 +1870,9 @@ function addNewEpisode() {
 
         try {
             lines.forEach((line, index) => {
-                const parts = line.split(/,\s*/);
+                const parts = line.split(/;\s*/);
                 if (parts.length !== 4) {
-                    throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "Name, Foreign text, English text, sent or received"`);
+                    throw new Error(`Invalid format in line ${index + 1}: "${line}". Expected "Name; Foreign text; English text; sent or received"`);
                 }
                 const [name, foreignText, englishText, sender] = parts;
                 if (!name || !foreignText || !englishText || !['received', 'sent'].includes(sender.toLowerCase())) {
@@ -1898,6 +1910,7 @@ function addNewEpisode() {
         }
     });
 }
+
 async function generateEpisodeStory() {
     const language = document.getElementById("add-episode-language").value;
     const title = document.getElementById("add-episode-title").value.trim();
