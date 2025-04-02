@@ -1427,8 +1427,8 @@ async function editStory(storyId) {
 
     const form = document.getElementById("edit-story-form");
     form.classList.remove("hidden");
-    
-    // Set form fields
+
+    // Set form fields with fallback to existing story values
     const storyIdInput = document.getElementById("edit-story-id");
     const languageSelect = document.getElementById("edit-language");
     const titleInput = document.getElementById("edit-story-title");
@@ -1437,19 +1437,13 @@ async function editStory(storyId) {
     const premiumSelect = document.getElementById("edit-premium");
     const categorySelect = document.getElementById("edit-story-category");
 
-    if (!storyIdInput || !languageSelect || !titleInput || !isNewSelect || !popularNowSelect || !premiumSelect || !categorySelect) {
-        console.error("One or more form elements are missing.");
-        alert("Error: Form structure is incomplete. Please check the HTML.");
-        return;
-    }
-
-    storyIdInput.value = story.id;
-    languageSelect.value = story.language;
-    titleInput.value = story.title;
-    isNewSelect.value = story.is_new ? "1" : "0";
-    popularNowSelect.value = story.popular_now ? "1" : "0";
-    premiumSelect.value = story.premium ? "1" : "0";
-    categorySelect.value = story.category || "";
+    if (storyIdInput) storyIdInput.value = story.id;
+    if (languageSelect) languageSelect.value = story.language;
+    if (titleInput) titleInput.value = story.title;
+    if (isNewSelect) isNewSelect.value = story.is_new ? "1" : "0";
+    if (popularNowSelect) popularNowSelect.value = story.popular_now ? "1" : "0";
+    if (premiumSelect) premiumSelect.value = story.premium ? "1" : "0";
+    if (categorySelect) categorySelect.value = story.category || "";
 
     // Replace the text input with a drop zone
     const coverPhotoRow = form.querySelector('.form-row:nth-child(8)');
@@ -1471,7 +1465,7 @@ async function editStory(storyId) {
         const msgDiv = document.createElement("div");
         msgDiv.innerHTML = `
             <label>Message ${index + 1} Text:</label>
-            <textarea id="edit-message-${index}-text" required>${msg.text}</textarea>
+            <textarea id="edit-message-${index}-text">${msg.text}</textarea>
             <label>Translation:</label>
             <textarea id="edit-message-${index}-translation">${translation}</textarea>
             <label>Sender:</label>
@@ -1543,30 +1537,15 @@ async function editStory(storyId) {
     form.onsubmit = async (e) => {
         e.preventDefault();
 
-        // Re-check all elements to ensure they exist
-        const storyIdInput = document.getElementById("edit-story-id");
-        const languageSelect = document.getElementById("edit-language");
-        const titleInput = document.getElementById("edit-story-title");
-        const isNewSelect = document.getElementById("edit-story-is-new");
-        const popularNowSelect = document.getElementById("edit-popular-now");
-        const premiumSelect = document.getElementById("edit-premium");
-        const categorySelect = document.getElementById("edit-story-category");
-        const coverPhotoInput = document.getElementById("edit-cover-photo");
-
-        if (!storyIdInput || !languageSelect || !titleInput || !isNewSelect || !popularNowSelect || !premiumSelect || !categorySelect || !coverPhotoInput) {
-            console.error("One or more form elements are missing during submission.");
-            alert("Error: Form submission failed due to missing elements.");
-            return;
-        }
-
-        const storyId = storyIdInput.value;
-        const language = languageSelect.value;
-        const title = titleInput.value;
-        const isNew = isNewSelect.value === "1";
-        const popularNow = popularNowSelect.value === "1";
-        const premium = premiumSelect.value === "1";
-        const category = categorySelect.value || null;
-        let coverPhoto = coverPhotoInput.value || null;
+        // Fetch elements with fallbacks to original story data
+        const storyId = document.getElementById("edit-story-id")?.value || story.id;
+        const language = document.getElementById("edit-language")?.value || story.language;
+        const title = document.getElementById("edit-story-title")?.value || story.title;
+        const isNew = document.getElementById("edit-story-is-new")?.value === "1" ? true : story.is_new;
+        const popularNow = document.getElementById("edit-popular-now")?.value === "1" ? true : story.popular_now;
+        const premium = document.getElementById("edit-premium")?.value === "1" ? true : story.premium;
+        const category = document.getElementById("edit-story-category")?.value || story.category || null;
+        let coverPhoto = document.getElementById("edit-cover-photo")?.value || story.cover_photo || null;
 
         if (editSelectedFile) {
             const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
@@ -1580,7 +1559,9 @@ async function editStory(storyId) {
             }
             const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
             coverPhoto = urlData.publicUrl;
-            coverPhotoInput.value = coverPhoto;
+            if (document.getElementById("edit-cover-photo")) {
+                document.getElementById("edit-cover-photo").value = coverPhoto;
+            }
         }
 
         const messages = [];
@@ -1590,12 +1571,12 @@ async function editStory(storyId) {
             const translationEl = document.getElementById(`edit-message-${i}-translation`);
             const senderEl = document.getElementById(`edit-message-${i}-sender`);
             const delayEl = document.getElementById(`edit-message-${i}-delay`);
-            if (textEl && senderEl && delayEl) {
-                const messageText = textEl.value.trim();
+            if (textEl && senderEl && delayEl) { // Only process if core elements exist
+                const messageText = textEl.value.trim() || "";
                 messages.push({
                     text: messageText,
-                    sender: senderEl.value,
-                    delay: Number(delayEl.value)
+                    sender: senderEl.value || "received", // Default to "received" if missing
+                    delay: Number(delayEl.value) || 2000 // Default to 2000 if missing
                 });
                 if (translationEl && translationEl.value.trim()) {
                     translationsToUpdate.push({
@@ -1616,8 +1597,10 @@ async function editStory(storyId) {
             const { error: deleteMessageError } = await supabase.from('messages').delete().eq('story_id', storyId);
             if (deleteMessageError) throw new Error(`Failed to delete old messages: ${deleteMessageError.message}`);
 
-            const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
-            if (messageError) throw new Error(`Failed to update messages: ${messageError.message}`);
+            if (messages.length > 0) {
+                const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
+                if (messageError) throw new Error(`Failed to update messages: ${messageError.message}`);
+            }
 
             if (translationsToUpdate.length > 0) {
                 const { error: deleteTransError } = await supabase.from('message_translations').delete().eq('language', language).in('message_text', messages.map(m => m.text.toLowerCase()));
