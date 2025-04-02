@@ -1427,13 +1427,29 @@ async function editStory(storyId) {
 
     const form = document.getElementById("edit-story-form");
     form.classList.remove("hidden");
-    document.getElementById("edit-story-id").value = story.id;
-    document.getElementById("edit-language").value = story.language;
-    document.getElementById("edit-story-title").value = story.title;
-    document.getElementById("edit-story-is-new").value = story.is_new ? "1" : "0";
-    document.getElementById("edit-popular-now").value = story.popular_now ? "1" : "0";
-    document.getElementById("edit-premium").value = story.premium ? "1" : "0";
-    document.getElementById("edit-story-category").value = story.category || "";
+    
+    // Set form fields
+    const storyIdInput = document.getElementById("edit-story-id");
+    const languageSelect = document.getElementById("edit-language");
+    const titleInput = document.getElementById("edit-story-title");
+    const isNewSelect = document.getElementById("edit-story-is-new");
+    const popularNowSelect = document.getElementById("edit-popular-now");
+    const premiumSelect = document.getElementById("edit-premium");
+    const categorySelect = document.getElementById("edit-story-category");
+
+    if (!storyIdInput || !languageSelect || !titleInput || !isNewSelect || !popularNowSelect || !premiumSelect || !categorySelect) {
+        console.error("One or more form elements are missing.");
+        alert("Error: Form structure is incomplete. Please check the HTML.");
+        return;
+    }
+
+    storyIdInput.value = story.id;
+    languageSelect.value = story.language;
+    titleInput.value = story.title;
+    isNewSelect.value = story.is_new ? "1" : "0";
+    popularNowSelect.value = story.popular_now ? "1" : "0";
+    premiumSelect.value = story.premium ? "1" : "0";
+    categorySelect.value = story.category || "";
 
     // Replace the text input with a drop zone
     const coverPhotoRow = form.querySelector('.form-row:nth-child(8)');
@@ -1449,7 +1465,7 @@ async function editStory(storyId) {
 
     const messagesDiv = document.getElementById("edit-messages");
     messagesDiv.innerHTML = "";
-    editMessageCount = 0;
+    editMessageCount = messages.length; // Set to actual number of messages
     messages.forEach((msg, index) => {
         const translation = translationsMap[msg.text.toLowerCase()] || "";
         const msgDiv = document.createElement("div");
@@ -1464,12 +1480,17 @@ async function editStory(storyId) {
                 <option value="sent" ${msg.sender === 'sent' ? 'selected' : ''}>Sent</option>
             </select>
             <label>Delay (ms):</label>
-            <input id="edit-message-${index}-delay" type="number" value="${msg.delay}">
-            <button type="button" onclick="this.parentElement.remove()">Remove</button>
+            <input id="edit-message-${index}-delay" type="number" value="${msg.delay || 2000}">
+            <button type="button" onclick="this.parentElement.remove(); updateMessageCount();">Remove</button>
         `;
         messagesDiv.appendChild(msgDiv);
-        editMessageCount = index + 1;
     });
+
+    // Function to update editMessageCount
+    function updateMessageCount() {
+        const messageElements = messagesDiv.querySelectorAll('div');
+        editMessageCount = messageElements.length;
+    }
 
     // Add event listeners for the edit drop zone
     const editDropZone = document.getElementById("edit-drop-zone");
@@ -1518,25 +1539,40 @@ async function editStory(storyId) {
         }
     });
 
-    // Update the form submission to handle the uploaded file
+    // Handle form submission
     form.onsubmit = async (e) => {
         e.preventDefault();
-        const storyId = document.getElementById("edit-story-id").value;
-        const language = document.getElementById("edit-language").value;
-        const title = document.getElementById("edit-story-title").value;
-        const isNew = document.getElementById("edit-story-is-new").value === "1";
-        const popularNow = document.getElementById("edit-popular-now").value === "1";
-        const premium = document.getElementById("edit-premium").value === "1";
-        const category = document.getElementById("edit-story-category").value || null;
-        let coverPhoto = document.getElementById("edit-cover-photo").value || null;
+
+        // Re-check all elements to ensure they exist
+        const storyIdInput = document.getElementById("edit-story-id");
+        const languageSelect = document.getElementById("edit-language");
+        const titleInput = document.getElementById("edit-story-title");
+        const isNewSelect = document.getElementById("edit-story-is-new");
+        const popularNowSelect = document.getElementById("edit-popular-now");
+        const premiumSelect = document.getElementById("edit-premium");
+        const categorySelect = document.getElementById("edit-story-category");
+        const coverPhotoInput = document.getElementById("edit-cover-photo");
+
+        if (!storyIdInput || !languageSelect || !titleInput || !isNewSelect || !popularNowSelect || !premiumSelect || !categorySelect || !coverPhotoInput) {
+            console.error("One or more form elements are missing during submission.");
+            alert("Error: Form submission failed due to missing elements.");
+            return;
+        }
+
+        const storyId = storyIdInput.value;
+        const language = languageSelect.value;
+        const title = titleInput.value;
+        const isNew = isNewSelect.value === "1";
+        const popularNow = popularNowSelect.value === "1";
+        const premium = premiumSelect.value === "1";
+        const category = categorySelect.value || null;
+        let coverPhoto = coverPhotoInput.value || null;
 
         if (editSelectedFile) {
             const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('cover-photos')
-                .upload(fileName, editSelectedFile, {
-                    contentType: editSelectedFile.type
-                });
+                .upload(fileName, editSelectedFile, { contentType: editSelectedFile.type });
             if (uploadError) {
                 console.error("Error uploading image:", uploadError.message);
                 alert("Failed to upload cover photo: " + uploadError.message);
@@ -1544,7 +1580,7 @@ async function editStory(storyId) {
             }
             const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
             coverPhoto = urlData.publicUrl;
-            document.getElementById("edit-cover-photo").value = coverPhoto;
+            coverPhotoInput.value = coverPhoto;
         }
 
         const messages = [];
@@ -1555,65 +1591,49 @@ async function editStory(storyId) {
             const senderEl = document.getElementById(`edit-message-${i}-sender`);
             const delayEl = document.getElementById(`edit-message-${i}-delay`);
             if (textEl && senderEl && delayEl) {
-                const messageText = textEl.value;
+                const messageText = textEl.value.trim();
                 messages.push({
                     text: messageText,
                     sender: senderEl.value,
                     delay: Number(delayEl.value)
                 });
-                if (translationEl && translationEl.value) {
+                if (translationEl && translationEl.value.trim()) {
                     translationsToUpdate.push({
                         language,
                         message_text: messageText.toLowerCase(),
-                        translation: translationEl.value
+                        translation: translationEl.value.trim()
                     });
                 }
             }
         }
 
-        console.log("Updating story with data:", { id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
-        const { error: storyError } = await supabase
-            .from('stories')
-            .upsert({ id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
-        if (storyError) {
-            console.error("Error updating story:", storyError);
-            alert("Failed to update story: " + storyError.message);
-            return;
-        }
+        try {
+            const { error: storyError } = await supabase
+                .from('stories')
+                .upsert({ id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
+            if (storyError) throw new Error(`Failed to update story: ${storyError.message}`);
 
-        const { error: deleteMessageError } = await supabase.from('messages').delete().eq('story_id', storyId);
-        if (deleteMessageError) {
-            console.error("Error deleting old messages:", deleteMessageError.message);
-            alert("Failed to delete old messages: " + deleteMessageError.message);
-            return;
-        }
+            const { error: deleteMessageError } = await supabase.from('messages').delete().eq('story_id', storyId);
+            if (deleteMessageError) throw new Error(`Failed to delete old messages: ${deleteMessageError.message}`);
 
-        const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
-        if (messageError) {
-            console.error("Error updating messages:", messageError.message);
-            alert("Failed to update messages: " + messageError.message);
-            return;
-        }
+            const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
+            if (messageError) throw new Error(`Failed to update messages: ${messageError.message}`);
 
-        if (translationsToUpdate.length > 0) {
-            const { error: deleteTransError } = await supabase.from('message_translations').delete().eq('language', language);
-            if (deleteTransError) {
-                console.error("Error deleting old translations:", deleteTransError.message);
-                alert("Failed to delete old translations: " + deleteTransError.message);
-                return;
+            if (translationsToUpdate.length > 0) {
+                const { error: deleteTransError } = await supabase.from('message_translations').delete().eq('language', language).in('message_text', messages.map(m => m.text.toLowerCase()));
+                if (deleteTransError) throw new Error(`Failed to delete old translations: ${deleteTransError.message}`);
+
+                const { error: transError } = await supabase.from('message_translations').insert(translationsToUpdate);
+                if (transError) throw new Error(`Failed to save translations: ${transError.message}`);
             }
 
-            const { error: transError } = await supabase.from('message_translations').insert(translationsToUpdate);
-            if (transError) {
-                console.error("Error saving translations:", transError.message);
-                alert("Failed to save translations: " + transError.message);
-                return;
-            }
+            alert(`Story "${title}" updated with ${messages.length} messages!`);
+            form.classList.add("hidden");
+            loadStoryList();
+        } catch (error) {
+            console.error("Error updating story:", error);
+            alert(error.message);
         }
-
-        alert(`Story "${title}" updated with ${messages.length} messages!`);
-        form.classList.add("hidden");
-        loadStoryList();
     };
 }
 
