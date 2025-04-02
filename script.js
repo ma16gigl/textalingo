@@ -1593,7 +1593,6 @@ async function editStory(storyId) {
 
     form.onsubmit = async (e) => {
         e.preventDefault();
-
         const storyId = document.getElementById("edit-story-id")?.value || story.id;
         const language = document.getElementById("edit-language")?.value || story.language;
         const title = document.getElementById("edit-story-title")?.value || story.title;
@@ -1602,7 +1601,6 @@ async function editStory(storyId) {
         const premium = document.getElementById("edit-premium")?.value === "1" ? true : story.premium;
         const category = document.getElementById("edit-story-category")?.value || story.category || null;
         let coverPhoto = document.getElementById("edit-cover-photo")?.value || story.cover_photo || null;
-
         if (editSelectedFile) {
             const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -1615,11 +1613,8 @@ async function editStory(storyId) {
             }
             const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
             coverPhoto = urlData.publicUrl;
-            if (document.getElementById("edit-cover-photo")) {
-                document.getElementById("edit-cover-photo").value = coverPhoto;
-            }
+            if (document.getElementById("edit-cover-photo")) document.getElementById("edit-cover-photo").value = coverPhoto;
         }
-
         const messages = [];
         const translationsToUpdate = [];
         for (let i = 0; i < editMessageCount; i++) {
@@ -1645,29 +1640,27 @@ async function editStory(storyId) {
                 }
             }
         }
-
         try {
             const { error: storyError } = await supabase
                 .from('stories')
                 .upsert({ id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
             if (storyError) throw new Error(`Failed to update story: ${storyError.message}`);
-
             const { error: deleteMessageError } = await supabase.from('messages').delete().eq('story_id', storyId);
             if (deleteMessageError) throw new Error(`Failed to delete old messages: ${deleteMessageError.message}`);
-
             if (messages.length > 0) {
                 const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
                 if (messageError) throw new Error(`Failed to update messages: ${messageError.message}`);
             }
-
             if (translationsToUpdate.length > 0) {
-                const { error: deleteTransError } = await supabase.from('message_translations').delete().eq('language', language).in('message_text', messages.map(m => m.text.toLowerCase()));
+                const { error: deleteTransError } = await supabase
+                    .from('message_translations')
+                    .delete()
+                    .eq('language', language)
+                    .in('message_text', messages.map(m => m.text.toLowerCase()));
                 if (deleteTransError) throw new Error(`Failed to delete old translations: ${deleteTransError.message}`);
-
                 const { error: transError } = await supabase.from('message_translations').insert(translationsToUpdate);
                 if (transError) throw new Error(`Failed to save translations: ${transError.message}`);
             }
-
             alert(`Story "${title}" updated with ${messages.length} messages!`);
             form.classList.add("hidden");
             loadStoryList();

@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
 </head>
 <body>
     <div id="initial-splash" class="screen">
@@ -129,6 +130,17 @@
     </div>
     <div id="home" class="screen hidden">
         <div id="language-menu">
+            <div id="streak-container">
+                <dotlottie-player 
+                    id="streak-fire" 
+                    src="https://lottie.host/8028a32b-f1a3-4feb-bfbd-bc05d2adece3/TnzXU65Gp7.lottie" 
+                    background="transparent" 
+                    speed="1" 
+                    loop 
+                    autoplay
+                ></dotlottie-player>
+                <span id="streak-count">0</span>
+            </div>
             <img id="language-icon" alt="Selected Language" src="" class="lang-icon">
             <div id="language-dropdown" class="dropdown hidden"></div>
         </div>
@@ -178,7 +190,7 @@
                         <option value="hebrew">Hebrew</option>
                         <option value="swedish">Swedish</option>
                         <option value="irish">Irish</option>
-LOD                    </select>
+                    </select>
                 </div>
                 <div class="form-row">
                     <label for="bulk-series-select">Existing Series (optional):</label>
