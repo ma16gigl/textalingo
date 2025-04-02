@@ -547,38 +547,58 @@ storyScreen.addEventListener("click", (e) => {
 });
 
 // New function to handle story completion
-function triggerStoryComplete() {
-    // Check if already completed to avoid multiple triggers
-    if (document.querySelector(".fireworks-container")) return;
+async function triggerStoryComplete() {
+    console.log("triggerStoryComplete called - Story complete!");
+    if (document.querySelector(".fireworks-container")) {
+        console.log("Fireworks already exist, skipping.");
+        return;
+    }
+
+    // Check if user is signed in
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const isSignedIn = !userError && userData?.user;
 
     // Create fireworks container
     const fireworksContainer = document.createElement("div");
     fireworksContainer.className = "fireworks-container";
+    console.log("Created fireworks container:", fireworksContainer);
     for (let i = 0; i < 10; i++) {
         const firework = document.createElement("div");
         firework.className = "firework";
         fireworksContainer.appendChild(firework);
     }
     storyScreen.appendChild(fireworksContainer);
+    console.log("Appended fireworks to storyScreen");
 
     // Vibrate the phone (if supported)
     if ("vibrate" in navigator) {
-        navigator.vibrate([200, 100, 200, 100, 200]); // Pattern: 200ms on, 100ms off, etc.
+        const vibrationSuccess = navigator.vibrate([200, 100, 200, 100, 200]);
+        console.log("Vibration attempted, success:", vibrationSuccess);
+        if (!vibrationSuccess) {
+            console.log("Vibration failed, possibly due to permissions or device state.");
+        }
+    } else {
+        console.log("Vibration API not supported in this browser.");
     }
 
-    // Show "Story Completed" message
+    // Show completion message based on sign-in status
     const completeMessage = document.createElement("div");
     completeMessage.className = "story-complete-message";
-    completeMessage.textContent = "Story Completed!";
+    if (isSignedIn) {
+        completeMessage.textContent = "Story Completed!";
+    } else {
+        completeMessage.innerHTML = 'Story Completed! <a href="signin.html" style="color: #fff; text-decoration: underline;">Sign in</a> to save progress and earn points';
+    }
     storyScreen.appendChild(completeMessage);
+    console.log("Appended story complete message");
 
     // Clean up after animation
     setTimeout(() => {
         fireworksContainer.remove();
         completeMessage.remove();
-    }, 3000); // Matches animation duration
+        console.log("Cleaned up fireworks and message after 3 seconds");
+    }, 3000);
 }
-
 function showNextMessage() {
     if (!currentStory || currentStory.length === 0) {
         console.error("No messages to display for story:", currentStoryId);
