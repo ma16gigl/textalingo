@@ -119,7 +119,7 @@ async function updateUserSubscription(sessionId) {
     if (!userData.user) return;
 
     const userId = userData.user.id;
-    const response = await fetch(`/.netlify/functions/verify-session?session_id=${sessionId}`);
+    const response = await Germanfetch(`/.netlify/functions/verify-session?session_id=${sessionId}`);
     const { status, plan, subscriptionId } = await response.json();
 
     if (status === 'paid' || status === 'active') {
@@ -181,7 +181,6 @@ async function loadHomeScreen(clearTiles = false) {
         return;
     }
 
-    // Group series episodes
     const seriesGroups = {};
     const nonSeriesStories = [];
     stories.forEach(story => {
@@ -670,12 +669,6 @@ function showWordsModal() {
                 wordText.textContent = word;
                 const heartBtn = document.createElement("button");
                 heartBtn.innerHTML = checkFavorite(word) ? "❤️" : "🤍";
-                heartBtn.style.cssText = `
-                    background: none;
-                    border: none;
-                    font-size: 1.2rem;
-                    cursor: pointer;
-                `;
                 heartBtn.addEventListener("click", () => {
                     const translation = translations[word] || "Translation not available";
                     toggleFavorite(word, translation);
@@ -1441,7 +1434,18 @@ async function editStory(storyId) {
     document.getElementById("edit-popular-now").value = story.popular_now ? "1" : "0";
     document.getElementById("edit-premium").value = story.premium ? "1" : "0";
     document.getElementById("edit-story-category").value = story.category || "";
-    document.getElementById("edit-cover-photo").value = story.cover_photo || "";
+
+    // Replace the text input with a drop zone
+    const coverPhotoRow = form.querySelector('.form-row:nth-child(8)');
+    coverPhotoRow.innerHTML = `
+        <label for="edit-cover-photo">Cover Photo:</label>
+        <div id="edit-drop-zone" class="drop-zone">
+            <p>Drag & drop an image here or click to upload</p>
+            <input type="file" id="edit-cover-photo-input" accept="image/*" style="display: none;">
+            <img id="edit-cover-photo-preview" class="cover-preview" src="${story.cover_photo || ''}" style="display: ${story.cover_photo ? 'block' : 'none'}; max-width: 100%; max-height: 200px;">
+        </div>
+        <input id="edit-cover-photo" type="hidden" value="${story.cover_photo || ''}">
+    `;
 
     const messagesDiv = document.getElementById("edit-messages");
     messagesDiv.innerHTML = "";
@@ -1466,6 +1470,151 @@ async function editStory(storyId) {
         messagesDiv.appendChild(msgDiv);
         editMessageCount = index + 1;
     });
+
+    // Add event listeners for the edit drop zone
+    const editDropZone = document.getElementById("edit-drop-zone");
+    const editCoverPhotoInput = document.getElementById("edit-cover-photo-input");
+    const editCoverPhotoPreview = document.getElementById("edit-cover-photo-preview");
+    let editSelectedFile = null;
+
+    editDropZone.addEventListener("click", () => editCoverPhotoInput.click());
+
+    editDropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        editDropZone.classList.add("dragover");
+    });
+
+    editDropZone.addEventListener("dragleave", () => {
+        editDropZone.classList.remove("dragover");
+    });
+
+    editDropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        editDropZone.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+            editSelectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editCoverPhotoPreview.src = e.target.result;
+                editCoverPhotoPreview.style.display = "block";
+                editDropZone.querySelector("p").style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    editCoverPhotoInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            editSelectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editCoverPhotoPreview.src = e.target.result;
+                editCoverPhotoPreview.style.display = "block";
+                editDropZone.querySelector("p").style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Update the form submission to handle the uploaded file
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const storyId = document.getElementById("edit-story-id").value;
+        const language = document.getElementById("edit-language").value;
+        const title = document.getElementById("edit-story-title").value;
+        const isNew = document.getElementById("edit-story-is-new").value === "1";
+        const popularNow = document.getElementById("edit-popular-now").value === "1";
+        const premium = document.getElementById("edit-premium").value === "1";
+        const category = document.getElementById("edit-story-category").value || null;
+        let coverPhoto = document.getElementById("edit-cover-photo").value || null;
+
+        if (editSelectedFile) {
+            const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.png`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('cover-photos')
+                .upload(fileName, editSelectedFile, {
+                    contentType: editSelectedFile.type
+                });
+            if (uploadError) {
+                console.error("Error uploading image:", uploadError.message);
+                alert("Failed to upload cover photo: " + uploadError.message);
+                return;
+            }
+            const { data: urlData } = supabase.storage.from('cover-photos').getPublicUrl(fileName);
+            coverPhoto = urlData.publicUrl;
+            document.getElementById("edit-cover-photo").value = coverPhoto;
+        }
+
+        const messages = [];
+        const translationsToUpdate = [];
+        for (let i = 0; i < editMessageCount; i++) {
+            const textEl = document.getElementById(`edit-message-${i}-text`);
+            const translationEl = document.getElementById(`edit-message-${i}-translation`);
+            const senderEl = document.getElementById(`edit-message-${i}-sender`);
+            const delayEl = document.getElementById(`edit-message-${i}-delay`);
+            if (textEl && senderEl && delayEl) {
+                const messageText = textEl.value;
+                messages.push({
+                    text: messageText,
+                    sender: senderEl.value,
+                    delay: Number(delayEl.value)
+                });
+                if (translationEl && translationEl.value) {
+                    translationsToUpdate.push({
+                        language,
+                        message_text: messageText.toLowerCase(),
+                        translation: translationEl.value
+                    });
+                }
+            }
+        }
+
+        console.log("Updating story with data:", { id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
+        const { error: storyError } = await supabase
+            .from('stories')
+            .upsert({ id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
+        if (storyError) {
+            console.error("Error updating story:", storyError);
+            alert("Failed to update story: " + storyError.message);
+            return;
+        }
+
+        const { error: deleteMessageError } = await supabase.from('messages').delete().eq('story_id', storyId);
+        if (deleteMessageError) {
+            console.error("Error deleting old messages:", deleteMessageError.message);
+            alert("Failed to delete old messages: " + deleteMessageError.message);
+            return;
+        }
+
+        const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
+        if (messageError) {
+            console.error("Error updating messages:", messageError.message);
+            alert("Failed to update messages: " + messageError.message);
+            return;
+        }
+
+        if (translationsToUpdate.length > 0) {
+            const { error: deleteTransError } = await supabase.from('message_translations').delete().eq('language', language);
+            if (deleteTransError) {
+                console.error("Error deleting old translations:", deleteTransError.message);
+                alert("Failed to delete old translations: " + deleteTransError.message);
+                return;
+            }
+
+            const { error: transError } = await supabase.from('message_translations').insert(translationsToUpdate);
+            if (transError) {
+                console.error("Error saving translations:", transError.message);
+                alert("Failed to save translations: " + transError.message);
+                return;
+            }
+        }
+
+        alert(`Story "${title}" updated with ${messages.length} messages!`);
+        form.classList.add("hidden");
+        loadStoryList();
+    };
 }
 
 function addEditMessage() {
@@ -1491,82 +1640,7 @@ function addEditMessage() {
 
 document.getElementById("edit-story-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const storyId = document.getElementById("edit-story-id").value;
-    const language = document.getElementById("edit-language").value;
-    const title = document.getElementById("edit-story-title").value;
-    const isNew = document.getElementById("edit-story-is-new").value === "1";
-    const popularNow = document.getElementById("edit-popular-now").value === "1";
-    const premium = document.getElementById("edit-premium").value === "1";
-    const category = document.getElementById("edit-story-category").value || null;
-    const coverPhoto = document.getElementById("edit-cover-photo").value || null;
-
-    const messages = [];
-    const translationsToUpdate = [];
-    for (let i = 0; i < editMessageCount; i++) {
-        const textEl = document.getElementById(`edit-message-${i}-text`);
-        const translationEl = document.getElementById(`edit-message-${i}-translation`);
-        const senderEl = document.getElementById(`edit-message-${i}-sender`);
-        const delayEl = document.getElementById(`edit-message-${i}-delay`);
-        if (textEl && senderEl && delayEl) {
-            const messageText = textEl.value;
-            messages.push({
-                text: messageText,
-                sender: senderEl.value,
-                delay: Number(delayEl.value)
-            });
-            if (translationEl && translationEl.value) {
-                translationsToUpdate.push({
-                    language,
-                    message_text: messageText.toLowerCase(),
-                    translation: translationEl.value
-                });
-            }
-        }
-    }
-
-    console.log("Updating story with data:", { id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
-    const { error: storyError } = await supabase
-        .from('stories')
-        .upsert({ id: storyId, language, title, is_new: isNew, popular_now: popularNow, premium, category, cover_photo: coverPhoto });
-    if (storyError) {
-        console.error("Error updating story:", storyError);
-        alert("Failed to update story: " + storyError.message);
-        return;
-    }
-
-    const { error: deleteMessageError } = await supabase.from('messages').delete().eq('story_id', storyId);
-    if (deleteMessageError) {
-        console.error("Error deleting old messages:", deleteMessageError.message);
-        alert("Failed to delete old messages: " + deleteMessageError.message);
-        return;
-    }
-
-    const { error: messageError } = await supabase.from('messages').insert(messages.map(msg => ({ story_id: storyId, ...msg })));
-    if (messageError) {
-        console.error("Error updating messages:", messageError.message);
-        alert("Failed to update messages: " + messageError.message);
-        return;
-    }
-
-    if (translationsToUpdate.length > 0) {
-        const { error: deleteTransError } = await supabase.from('message_translations').delete().eq('language', language);
-        if (deleteTransError) {
-            console.error("Error deleting old translations:", deleteTransError.message);
-            alert("Failed to delete old translations: " + deleteTransError.message);
-            return;
-        }
-
-        const { error: transError } = await supabase.from('message_translations').insert(translationsToUpdate);
-        if (transError) {
-            console.error("Error saving translations:", transError.message);
-            alert("Failed to save translations: " + transError.message);
-            return;
-        }
-    }
-
-    alert(`Story "${title}" updated with ${messages.length} messages!`);
-    document.getElementById("edit-story-form").classList.add("hidden");
-    loadStoryList();
+    // This is a fallback listener; the main submission logic is now in editStory
 });
 
 function switchTab(tab) {
