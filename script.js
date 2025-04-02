@@ -205,7 +205,6 @@ async function loadHomeScreen(clearTiles = false) {
         if (story.popular_now) categories["Popular Now"].push(story);
     });
 
-    // Add series as a single grouped entry under "Series" category
     if (Object.keys(seriesGroups).length > 0) {
         categories["Series"] = Object.entries(seriesGroups).map(([title, episodes]) => ({ title, episodes }));
     }
@@ -261,7 +260,6 @@ async function loadHomeScreen(clearTiles = false) {
             tile.classList.add("story-tile");
 
             if (category === "Series") {
-                // Series tile with stacked effect
                 const series = item;
                 const episodeCount = series.episodes.length;
                 tile.classList.add("series-deck");
@@ -275,7 +273,6 @@ async function loadHomeScreen(clearTiles = false) {
                 `;
                 tile.addEventListener("click", () => showSeriesEpisodesFrontend(series.title, series.episodes, isPremiumUser));
             } else {
-                // Non-series tile
                 const story = item;
                 if (story.is_new) tile.classList.add("new");
                 if (story.premium) tile.classList.add("premium");
@@ -1672,7 +1669,7 @@ function addNewEpisode() {
             <label for="add-episode-premium">Premium:</label>
             <select id="add-episode-premium">
                 <option value="0">No</option>
-                < Immobilized="1">Yes</option>
+                <option value="1">Yes</option>
             </select>
         </div>
         <div class="form-row">
