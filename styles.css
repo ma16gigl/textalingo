@@ -1053,8 +1053,8 @@ footer a {
         font-size: clamp(0.9rem, 2vw, 1.1rem);
     }
     .premium-crown {
-        width: 30px;
-        height: 30px;
+        width: 90px;
+        height: 90px;
     }
     .carousel-track {
         gap: 20px;
@@ -1113,6 +1113,7 @@ footer a {
     .story-tile.series-deck:hover .card-3 {
         transform: translate(12px, 12px) rotate(3deg);
     }
+    
 }
 
 /* Responsive Adjustments for Admin Form */
