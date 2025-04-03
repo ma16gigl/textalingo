@@ -540,35 +540,22 @@ storyScreen.addEventListener("click", (e) => {
         } else if (messageIndex < currentStory.length) {
             showNextMessage();
         } else {
-            // Story is complete, trigger fireworks and completion
             triggerStoryComplete();
         }
     }
 });
 
-// New function to handle story completion
 async function triggerStoryComplete() {
     console.log("triggerStoryComplete called - Story complete!");
-    if (document.querySelector(".fireworks-container")) {
-        console.log("Fireworks already exist, skipping.");
+    const animation = document.getElementById("story-complete-animation");
+    if (!animation) {
+        console.error("Lottie animation element not found!");
         return;
     }
 
-    // Check if user is signed in
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    const isSignedIn = !userError && userData?.user;
-
-    // Create fireworks container
-    const fireworksContainer = document.createElement("div");
-    fireworksContainer.className = "fireworks-container";
-    console.log("Created fireworks container:", fireworksContainer);
-    for (let i = 0; i < 10; i++) {
-        const firework = document.createElement("div");
-        firework.className = "firework";
-        fireworksContainer.appendChild(firework);
-    }
-    storyScreen.appendChild(fireworksContainer);
-    console.log("Appended fireworks to storyScreen");
+    // Show the Lottie animation
+    animation.style.display = "block";
+    console.log("Lottie animation displayed");
 
     // Vibrate the phone (if supported)
     if ("vibrate" in navigator) {
@@ -581,24 +568,13 @@ async function triggerStoryComplete() {
         console.log("Vibration API not supported in this browser.");
     }
 
-    // Show completion message based on sign-in status
-    const completeMessage = document.createElement("div");
-    completeMessage.className = "story-complete-message";
-    if (isSignedIn) {
-        completeMessage.textContent = "Story Completed!";
-    } else {
-        completeMessage.innerHTML = 'Story Completed! <a href="signin.html" style="color: #fff; text-decoration: underline;">Sign in</a> to save progress and earn points';
-    }
-    storyScreen.appendChild(completeMessage);
-    console.log("Appended story complete message");
-
-    // Clean up after animation
+    // Hide the animation after 3 seconds (adjust duration as needed)
     setTimeout(() => {
-        fireworksContainer.remove();
-        completeMessage.remove();
-        console.log("Cleaned up fireworks and message after 3 seconds");
+        animation.style.display = "none";
+        console.log("Lottie animation hidden after 3 seconds");
     }, 3000);
 }
+
 function showNextMessage() {
     if (!currentStory || currentStory.length === 0) {
         console.error("No messages to display for story:", currentStoryId);
@@ -890,6 +866,8 @@ backBtn.addEventListener("click", () => {
     homeScreen.classList.remove("hidden");
     messageIndex = 0;
     instructionState = 0;
+    const animation = document.getElementById("story-complete-animation");
+    if (animation) animation.style.display = "none"; // Ensure animation is hidden when going back
 });
 
 fontSizeBtn.addEventListener("click", () => {
