@@ -568,11 +568,32 @@ async function triggerStoryComplete() {
         console.log("Vibration API not supported in this browser.");
     }
 
-    // Hide the animation after 3 seconds (adjust duration as needed)
+    // Check user authentication status
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+        console.error("Error checking user auth status:", userError.message);
+    }
+    const isSignedIn = !userError && userData?.user;
+
+    // Hide the animation and redirect after 3 seconds
     setTimeout(() => {
         animation.style.display = "none";
         console.log("Lottie animation hidden after 3 seconds");
-    }, 3000);
+
+        if (isSignedIn) {
+            // User is signed in, redirect to home screen
+            console.log("User is signed in, redirecting to home screen");
+            storyScreen.classList.add("hidden");
+            homeScreen.classList.remove("hidden");
+            messageIndex = 0; // Reset message index for next story
+            instructionState = 0; // Reset instruction state
+            loadHomeScreen(true); // Refresh home screen content
+        } else {
+            // User is not signed in, redirect to sign-in page
+            console.log("User is not signed in, redirecting to signin.html");
+            window.location.href = "signin.html";
+        }
+    }, 3000); // Duration matches animation visibility
 }
 
 function showNextMessage() {
