@@ -843,6 +843,7 @@ html[lang="he"] .message.sent .sender-name,
     width: 100vw;
     margin-left: calc(-50vw + 50%);
     padding-top: 0;
+    padding-left: 0.25rem; /* Reduced from 1rem inherited from .screen */
     background-color: #101823;
     overflow-x: hidden;
 }
@@ -1161,6 +1162,7 @@ footer a {
     }
     #home {
         padding-top: 0;
+        padding-left: 0.25rem; /* Reduced from 0.5rem inherited from .screen */
     }
     #get-started-btn {
         padding: 0.75rem 0.25rem;
