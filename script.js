@@ -18,6 +18,7 @@ let currentStoryId = null;
 let instructionState = 0;
 let currentSeriesTitle = null;
 let currentEpisodeNumber = 0;
+let currentStreak = 0; // Added for streak tracking
 
 const initialSplashScreen = document.getElementById("initial-splash");
 const languageSplashScreen = document.getElementById("language-splash");
@@ -133,6 +134,65 @@ async function updateUserSubscription(sessionId) {
     }
 }
 
+async function updateStreak(userId, increment = false) {
+    if (!userId) {
+        console.log("No user ID, streak not updated");
+        currentStreak = 0;
+        document.getElementById("streak-count").textContent = currentStreak;
+        return;
+    }
+
+    const { data, error } = await supabase
+        .from('user_streaks')
+        .select('streak_count, last_completion')
+        .eq('user_id', userId)
+        .eq('language', currentLanguage)
+        .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error("Error fetching streak:", error.message);
+        return;
+    }
+
+    let streakCount = data?.streak_count || 0;
+    const lastCompletion = data?.last_completion ? new Date(data.last_completion) : null;
+    const now = new Date();
+
+    // Check if 24 hours have passed since last completion
+    if (lastCompletion) {
+        const timeDiff = now - lastCompletion;
+        const hoursDiff = timeDiff / (1000 * 60 * 60); // Convert ms to hours
+        if (hoursDiff >= 24) {
+            streakCount = 0; // Reset streak if 24+ hours have passed
+            console.log("24+ hours since last completion, resetting streak to 0");
+        }
+    }
+
+    if (increment) {
+        streakCount = lastCompletion && (now - lastCompletion) < (24 * 60 * 60 * 1000) ? streakCount + 1 : 1;
+        console.log("Incrementing streak to:", streakCount);
+    }
+
+    // Update or insert streak data
+    const { error: upsertError } = await supabase
+        .from('user_streaks')
+        .upsert({
+            user_id: userId,
+            language: currentLanguage,
+            streak_count: streakCount,
+            last_completion: increment ? now.toISOString() : lastCompletion ? lastCompletion.toISOString() : null
+        }, { onConflict: ['user_id', 'language'] });
+
+    if (upsertError) {
+        console.error("Error updating streak:", upsertError.message);
+        return;
+    }
+
+    currentStreak = streakCount;
+    document.getElementById("streak-count").textContent = currentStreak;
+    console.log("Streak updated:", currentStreak);
+}
+
 async function loadHomeScreen(clearTiles = false) {
     if (clearTiles) storyTiles.innerHTML = "";
     languageIcon.src = `/Assets/${currentLanguage}.png`;
@@ -155,6 +215,10 @@ async function loadHomeScreen(clearTiles = false) {
         } else if (subData && subData.length > 0) {
             isPremiumUser = subData[0].status === 'active' || subData[0].status === 'paid';
         }
+        await updateStreak(user.id); // Check and update streak on load
+    } else {
+        currentStreak = 0;
+        document.getElementById("streak-count").textContent = currentStreak;
     }
 
     console.log("Fetching stories for language:", currentLanguage);
@@ -187,12 +251,10 @@ async function loadHomeScreen(clearTiles = false) {
                 </div>
             </div>
         `;
-        // Add event listener for the Notify Me button
         document.getElementById("notify-btn").addEventListener("click", handleNotifyMe);
         return;
     }
 
-    // [Rest of the function for rendering stories remains unchanged]
     const seriesGroups = {};
     const nonSeriesStories = [];
     stories.forEach(story => {
@@ -331,35 +393,6 @@ async function loadHomeScreen(clearTiles = false) {
     if (loadMoreBtn) loadMoreBtn.style.display = hasMoreStories ? "block" : "none";
 
     await updateDropdown();
-}
-
-async function handleNotifyMe() {
-    const emailInput = document.getElementById("notify-email");
-    const email = emailInput.value.trim();
-
-    if (!email) {
-        alert("Please enter a valid email address.");
-        return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        alert("Please enter a valid email address.");
-        return;
-    }
-
-    // Placeholder for email submission logic (e.g., save to Supabase)
-    console.log(`Email submitted for notification: ${email} for language: ${currentLanguage}`);
-    try {
-        const { error } = await supabase
-            .from('notify_list')
-            .insert([{ email, language: currentLanguage, created_at: new Date().toISOString() }]);
-        if (error) throw error;
-        alert("Thank you! You’ll be notified when stories are available.");
-        emailInput.value = ""; // Clear the input
-    } catch (error) {
-        console.error("Error saving email:", error.message);
-        alert("Failed to save your email. Please try again.");
-    }
 }
 
 async function showSeriesEpisodesFrontend(seriesTitle, episodes, isPremiumUser) {
@@ -594,11 +627,9 @@ async function triggerStoryComplete() {
         return;
     }
 
-    // Show the Lottie animation
     animation.style.display = "block";
     console.log("Lottie animation displayed");
 
-    // Vibrate the phone (if supported)
     if ("vibrate" in navigator) {
         const vibrationSuccess = navigator.vibrate([200, 100, 200, 100, 200]);
         console.log("Vibration attempted, success:", vibrationSuccess);
@@ -609,32 +640,32 @@ async function triggerStoryComplete() {
         console.log("Vibration API not supported in this browser.");
     }
 
-    // Check user authentication status
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) {
         console.error("Error checking user auth status:", userError.message);
     }
     const isSignedIn = !userError && userData?.user;
 
-    // Hide the animation and redirect after 3 seconds
+    if (isSignedIn) {
+        await updateStreak(userData.user.id, true); // Increment streak
+    }
+
     setTimeout(() => {
         animation.style.display = "none";
         console.log("Lottie animation hidden after 3 seconds");
 
         if (isSignedIn) {
-            // User is signed in, redirect to home screen
             console.log("User is signed in, redirecting to home screen");
             storyScreen.classList.add("hidden");
             homeScreen.classList.remove("hidden");
-            messageIndex = 0; // Reset message index for next story
-            instructionState = 0; // Reset instruction state
-            loadHomeScreen(true); // Refresh home screen content
+            messageIndex = 0;
+            instructionState = 0;
+            loadHomeScreen(true);
         } else {
-            // User is not signed in, redirect to sign-in page
             console.log("User is not signed in, redirecting to signin.html");
             window.location.href = "signin.html";
         }
-    }, 3000); // Duration matches animation visibility
+    }, 3000);
 }
 
 function showNextMessage() {
@@ -929,7 +960,7 @@ backBtn.addEventListener("click", () => {
     messageIndex = 0;
     instructionState = 0;
     const animation = document.getElementById("story-complete-animation");
-    if (animation) animation.style.display = "none"; // Ensure animation is hidden when going back
+    if (animation) animation.style.display = "none";
 });
 
 fontSizeBtn.addEventListener("click", () => {
@@ -1736,7 +1767,6 @@ function addEditMessage() {
 
 document.getElementById("edit-story-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    // This is a fallback listener; the main submission logic is now in editStory
 });
 
 function switchTab(tab) {
@@ -1814,7 +1844,7 @@ function addNewEpisode() {
             <label for="add-episode-language">Language:</label>
             <select id="add-episode-language" disabled>
                 <option value="${language}">${language.charAt(0).toUpperCase() + language.slice(1)}</option>
-            </select>
+                    </select>
             <input type="hidden" name="add-episode-language" value="${language}">
         </div>
         <div class="form-row">
@@ -2225,6 +2255,34 @@ async function cancelSubscription() {
     } catch (error) {
         console.error("Error canceling subscription:", error);
         alert("Failed to cancel subscription: " + error.message);
+    }
+}
+
+async function handleNotifyMe() {
+    const emailInput = document.getElementById("notify-email");
+    const email = emailInput.value.trim();
+
+    if (!email) {
+        alert("Please enter a valid email address.");
+        return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+    }
+
+    console.log(`Email submitted for notification: ${email} for language: ${currentLanguage}`);
+    try {
+        const { error } = await supabase
+            .from('notify_list')
+            .insert([{ email, language: currentLanguage, created_at: new Date().toISOString() }]);
+        if (error) throw error;
+        alert("Thank you! You’ll be notified when stories are available.");
+        emailInput.value = "";
+    } catch (error) {
+        console.error("Error saving email:", error.message);
+        alert("Failed to save your email. Please try again.");
     }
 }
 
