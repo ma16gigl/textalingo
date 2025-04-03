@@ -186,6 +186,7 @@ textarea {
     height: 50px; /* Unchanged */
     cursor: pointer;
     transition: transform 0.2s;
+    margin-top: 5px; /* Lowers the icon slightly */
 }
 
 .lang-icon:hover {
@@ -1152,6 +1153,7 @@ footer a {
     .lang-icon {
         width: 40px; /* Unchanged from previous mobile size */
         height: 40px; /* Unchanged from previous mobile size */
+        margin-top: 4px; /* Slightly smaller offset for mobile */
     }
     #story-tiles {
         margin-top: 3rem;
