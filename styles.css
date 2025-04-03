@@ -1218,3 +1218,86 @@ footer a {
     }
 }
 
+/* Add these new rules at the bottom or in a logical section of styles.css */
+
+/* Container for Coming Soon message and email input */
+.coming-soon-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh; /* Takes up significant vertical space */
+    text-align: center;
+    color: #fff; /* White text on #101823 background */
+    padding: 2rem;
+}
+
+/* Large Coming Soon text */
+.coming-soon-text {
+    font-size: clamp(2.5rem, 8vw, 4rem); /* Large, responsive text */
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+/* Paragraph text */
+.coming-soon-container p {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Email input and button container */
+.email-notify {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap; /* Wraps on small screens */
+    justify-content: center;
+}
+
+/* Style the email input */
+#notify-email {
+    width: 100%;
+    max-width: 300px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #000;
+}
+
+/* Style the Notify Me button */
+#notify-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    background-color: #F40673; /* Matches your pink theme */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#notify-btn:hover {
+    background-color: #d90562;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+    .coming-soon-container {
+        padding: 1rem;
+    }
+    .coming-soon-text {
+        font-size: clamp(2rem, 6vw, 3rem);
+    }
+    .coming-soon-container p {
+        font-size: 1rem;
+    }
+    .email-notify {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    #notify-email {
+        max-width: 100%;
+    }
+}
+

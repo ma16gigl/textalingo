@@ -177,10 +177,22 @@ async function loadHomeScreen(clearTiles = false) {
 
     if (!stories || stories.length === 0) {
         console.log("No stories found for language:", currentLanguage);
-        storyTiles.innerHTML = "<p>No stories available for this language yet.</p>";
+        storyTiles.innerHTML = `
+            <div class="coming-soon-container">
+                <h1 class="coming-soon-text">Coming Soon!</h1>
+                <p>Get notified when stories are available for ${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)}:</p>
+                <div class="email-notify">
+                    <input type="email" id="notify-email" placeholder="Enter your email" required>
+                    <button id="notify-btn">Notify Me</button>
+                </div>
+            </div>
+        `;
+        // Add event listener for the Notify Me button
+        document.getElementById("notify-btn").addEventListener("click", handleNotifyMe);
         return;
     }
 
+    // [Rest of the function for rendering stories remains unchanged]
     const seriesGroups = {};
     const nonSeriesStories = [];
     stories.forEach(story => {
@@ -319,6 +331,35 @@ async function loadHomeScreen(clearTiles = false) {
     if (loadMoreBtn) loadMoreBtn.style.display = hasMoreStories ? "block" : "none";
 
     await updateDropdown();
+}
+
+async function handleNotifyMe() {
+    const emailInput = document.getElementById("notify-email");
+    const email = emailInput.value.trim();
+
+    if (!email) {
+        alert("Please enter a valid email address.");
+        return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+    }
+
+    // Placeholder for email submission logic (e.g., save to Supabase)
+    console.log(`Email submitted for notification: ${email} for language: ${currentLanguage}`);
+    try {
+        const { error } = await supabase
+            .from('notify_list')
+            .insert([{ email, language: currentLanguage, created_at: new Date().toISOString() }]);
+        if (error) throw error;
+        alert("Thank you! You’ll be notified when stories are available.");
+        emailInput.value = ""; // Clear the input
+    } catch (error) {
+        console.error("Error saving email:", error.message);
+        alert("Failed to save your email. Please try again.");
+    }
 }
 
 async function showSeriesEpisodesFrontend(seriesTitle, episodes, isPremiumUser) {
