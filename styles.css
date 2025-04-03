@@ -1135,13 +1135,18 @@ footer a {
         gap: 0.5rem;
         justify-content: space-between;
     }
+    @media (max-width: 600px) {
+        #streak-container {
+            gap: 0.2rem; /* Slightly smaller gap for mobile, adjust as needed */
+        }
+    }
     #streak-fire {
         width: 48px; /* Increased from 40px */
         height: 48px; /* Increased from 40px */
     }
     #streak-count {
         font-size: 1.4rem; /* Increased from 1.2rem */
-        margin-top: 8px; /* Adjusted for mobile */
+        margin-top: 12px; /* Adjusted for mobile */
     }
     .lang-icon {
         width: 40px; /* Unchanged from previous mobile size */
